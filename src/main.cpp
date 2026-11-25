@@ -3,6 +3,8 @@
 #include "update.h"
 #include "form.h"
 #include "build_config.h"
+#include "custom_pet.h"
+#include <commdlg.h>
 #include <windowsx.h>
 #include <commctrl.h>
 #include <random>
@@ -10,11 +12,11 @@
 using namespace pet;
 namespace {
 constexpr UINT TRAY=WM_APP+1;
-enum Command{Countdown=100,Interval,Alarm,Pause,Stop,Reset,Acknowledge,Snooze5,Snooze10,Snooze15,SnoozeCustom,Cat,Dog,Rename,Size,Opacity,Top,Pass,Visibility,Preferences,CheckUpdate,About,Exit,Coat0=200,Quick0=300};
+enum Command{Countdown=100,Interval,Alarm,Pause,Stop,Reset,Acknowledge,Snooze5,Snooze10,Snooze15,SnoozeCustom,Cat,Dog,Rename,Size,Opacity,Top,Pass,Visibility,Preferences,CheckUpdate,About,Exit,ImportCustom,SelectCustom,Coat0=200,Quick0=300,CustomAction0=400};
 const wchar_t* cats[]={L"橘貓",L"三花貓",L"白貓",L"黑貓",L"虎斑貓"};
 const wchar_t* dogs[]={L"赤色柴犬",L"黑色柴犬",L"白色柴犬",L"柯基犬",L"米色垂耳犬"};
 struct App{
- HINSTANCE instance;HWND window=nullptr,bubble=nullptr;HANDLE singleton=nullptr;Config c;fs::path config;Json dialogue;UpdateClient updates;std::mt19937 rng{std::random_device{}()};std::string lastLine;Sprite sprite;Spring spring;Action action=Action::Idle;
+ HINSTANCE instance;HWND window=nullptr,bubble=nullptr;HANDLE singleton=nullptr;Config c;fs::path config;Json dialogue;UpdateClient updates;std::mt19937 rng{std::random_device{}()};std::string lastLine;Sprite sprite;CustomPet custom;Spring spring;Action action=Action::Idle;
  bool manualHidden=false,fullscreenHidden=false,dragging=false,pressed=false,tracking=false,updating=false,loading=true,manualCheck=false,updateNotified=false,downloadRequested=false,formOpen=false,menuOpen=false,reminderQueued=false;
  POINT down{},lastMouse{},startPos{};int dpi=96,canvas=144,petSize=96,clicks=0,strokes=0,lastDirection=0;ULONGLONG nextUpdateNotice=0,lastInput=0,actionEnd=0,bubbleEnd=0,lastClick=0,lastStroke=0,nextIdle=0,frameTime=0,lastMove=0;std::wstring speech;std::string observedStatus;fs::path observedStage;UINT taskbar=0;HDC memory=nullptr;HBITMAP bitmap=nullptr,oldBitmap=nullptr;uint32_t*bits=nullptr;int allocated=0;
  explicit App(HINSTANCE i):instance(i){}
@@ -26,18 +28,37 @@ struct App{
  void clampPosition(){RECT r{c.x,c.y,c.x+canvas,c.y+canvas};MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromRect(&r,MONITOR_DEFAULTTONEAREST),&mi);c.x=std::clamp(c.x,int(mi.rcWork.left),std::max(int(mi.rcWork.left),int(mi.rcWork.right)-canvas));c.y=std::clamp(c.y,int(mi.rcWork.top),std::max(int(mi.rcWork.top),int(mi.rcWork.bottom)-canvas));c.positioned=true;SetWindowPos(window,c.top?HWND_TOPMOST:HWND_NOTOPMOST,c.x,c.y,canvas,canvas,SWP_NOACTIVATE);rememberMonitor();}
  void sizeChanged(){dpi=int(GetDpiForWindow(window));petSize=MulDiv(96*c.scale/100,dpi,96);canvas=petSize*3/2;clampPosition();render();placeBubble();}
  void tray(bool add=false){NOTIFYICONDATAW n{};n.cbSize=sizeof(n);n.hWnd=window;n.uID=1;n.uFlags=NIF_ICON|NIF_MESSAGE|NIF_TIP;n.uCallbackMessage=TRAY;n.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(1));auto tip=wide(c.name)+L" · DesktopPet";if(c.timer.pending)tip+=L" · 待確認提醒";else if(updates.busy())tip+=L" · 更新作業 "+std::to_wstring(updates.progress())+L"%";wcsncpy_s(n.szTip,tip.c_str(),_TRUNCATE);Shell_NotifyIconW(add?NIM_ADD:NIM_MODIFY,&n);if(add){n.uVersion=NOTIFYICON_VERSION_4;Shell_NotifyIconW(NIM_SETVERSION,&n);}}
- std::wstring say(const std::string&state){auto&list=dialogue[c.pet?"dog":"cat"][state].items();if(list.empty())return c.pet?L"汪～我在這裡。":L"喵～我在這裡。";size_t k=rng()%list.size();if(list.size()>1&&list[k].str()==lastLine)k=(k+1)%list.size();lastLine=list[k].str();try{return wide(lastLine);}catch(...){return L"陪著你。";}}
+ std::wstring say(const std::string&state){auto&list=dialogue[c.pet==2?"custom":c.pet?"dog":"cat"][state].items();if(list.empty()&&c.pet==2)return L"我在這裡陪你。";if(list.empty())return c.pet?L"汪～我在這裡。":L"喵～我在這裡。";size_t k=rng()%list.size();if(list.size()>1&&list[k].str()==lastLine)k=(k+1)%list.size();lastLine=list[k].str();try{return wide(lastLine);}catch(...){return L"陪著你。";}}
  void speak(const std::wstring&s){if(menuOpen||c.timer.pending)return;speech=s;bubbleEnd=GetTickCount64()+4000;placeBubble();}
- void interact(Action a,const std::string&state,int ms=2400){if(menuOpen)return;lastInput=GetTickCount64();if(c.timer.pending||dragging)return;action=a;actionEnd=lastInput+ms;speak(say(state));scheduleFrame();}
+ void interact(Action a,const std::string&state,int ms=2400){if(menuOpen)return;lastInput=GetTickCount64();if(c.timer.pending||dragging)return;action=a;actionEnd=lastInput+(c.pet==2?custom.duration(a,unsigned(ms)):unsigned(ms));speak(say(state));scheduleFrame();}
  void reminder(){if(dragging||menuOpen){reminderQueued=true;return;}reminderQueued=false;action=Action::Remind;actionEnd=GetTickCount64()+1800;speech=wide(c.timer.title)+L"\n"+wide(c.timer.text)+L"\n（點一下確認；右鍵可延後）";bubbleEnd=0;placeBubble();tray();scheduleFrame();}
  void acknowledge(){c.timer.acknowledge();speech.clear();action=Action::Happy;actionEnd=GetTickCount64()+1500;ShowWindow(bubble,SW_HIDE);tray();persist();}
  void defer(int min){c.timer.defer(now(),min);reminderQueued=false;bubbleEnd=0;actionEnd=0;speech.clear();ShowWindow(bubble,SW_HIDE);action=Action::Idle;tray();persist();}
- void scheduleFrame(){if(hidden()||menuOpen){KillTimer(window,2);return;}UINT ms=(dragging?16:spring.moving()?25:action==Action::Sleep?500:83);SetTimer(window,2,ms,nullptr);}
- void render(){if(hidden()||!window)return;auto tick=GetTickCount64();double t=tick/1000.;double dt=frameTime?std::min(.04,(tick-frameTime)/1000.):.016;frameTime=tick;if(!dragging)spring.step(dt);sprite.make(c.pet,c.coat,action,t);
+ void scheduleFrame(){if(hidden()||menuOpen){KillTimer(window,2);return;}UINT ms=(dragging?16:spring.moving()?25:action==Action::Sleep?(c.pet==2?250:500):83);SetTimer(window,2,ms,nullptr);}
+ void render(){if(hidden()||!window)return;auto tick=GetTickCount64();double t=tick/1000.;double dt=frameTime?std::min(.04,(tick-frameTime)/1000.):.016;frameTime=tick;if(!dragging)spring.step(dt);if(c.pet!=2)sprite.make(c.pet,c.coat,action,t);
   if(allocated!=canvas){if(memory){SelectObject(memory,oldBitmap);DeleteObject(bitmap);DeleteDC(memory);}BITMAPINFO bi{};bi.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);bi.bmiHeader.biWidth=canvas;bi.bmiHeader.biHeight=-canvas;bi.bmiHeader.biPlanes=1;bi.bmiHeader.biBitCount=32;bi.bmiHeader.biCompression=BI_RGB;memory=CreateCompatibleDC(nullptr);bitmap=CreateDIBSection(memory,&bi,DIB_RGB_COLORS,reinterpret_cast<void**>(&bits),nullptr,0);if(!bitmap||!memory)throw std::runtime_error("Cannot create drawing surface");oldBitmap=static_cast<HBITMAP>(SelectObject(memory,bitmap));allocated=canvas;}
   std::fill(bits,bits+canvas*canvas,0u);double sx=spring.x,sy=spring.y;if(action==Action::Stretch){sx*=1.16;sy*=.85;}if(action==Action::Belly){sx*=1.08;sy*=.94;}if(action==Action::Sleep)sy*=.93;
-  int w=int(petSize*sx),h=int(petSize*sy),ox=(canvas-w)/2,oy=(canvas-h)/2;int jump=0;if(action==Action::Remind&&tick<actionEnd)jump=int(std::abs(std::sin((actionEnd-tick)/1800.*3.14159265*3))*petSize*.16);oy-=jump;
-  for(int y=0;y<h;++y){int yy=oy+y;if(yy<0||yy>=canvas)continue;for(int x=0;x<w;++x){int xx=ox+x;if(xx<0||xx>=canvas)continue;bits[yy*canvas+xx]=sprite.pixels[std::min(47,y*48/h)*48+std::min(47,x*48/w)];}}
+  const ImageClip* image=nullptr;size_t imageFrame=0;bool fallback=false;
+  if(c.pet==2&&custom.ready()){
+   image=&custom.clip(action,fallback);imageFrame=custom.frame(action,tick);
+   if(fallback||image->frames.size()==1){
+    sy*=1.+std::sin(t*(action==Action::Sleep?1.6:2.5))*.014;
+    if(action==Action::Happy||action==Action::Shy)sx*=1.+std::sin(t*5)*.035;
+    if(action==Action::Angry)sx*=1.+std::sin(t*18)*.025;
+    if(action==Action::Blink)sy*=.88;
+   }
+  }
+  double aspect=image?double(image->crop.w)/image->crop.h:1.;
+  int w=std::max(1,int(petSize*sx*std::min(1.,aspect))),h=std::max(1,int(petSize*sy/std::max(1.,aspect))),ox=(canvas-w)/2,oy=(canvas-h)/2;int jump=0;if(action==Action::Remind&&tick<actionEnd)jump=int(std::abs(std::sin((actionEnd-tick)/1800.*3.14159265*3))*petSize*.16);oy-=jump;
+  for(int y=0;y<h;++y){int yy=oy+y;if(yy<0||yy>=canvas)continue;for(int x=0;x<w;++x){int xx=ox+x;if(xx<0||xx>=canvas)continue;bits[yy*canvas+xx]=image?image->sample(imageFrame,image->crop.x+(x+.5)*image->crop.w/w-.5,image->crop.y+(y+.5)*image->crop.h/h-.5):sprite.pixels[std::min(47,y*48/h)*48+std::min(47,x*48/w)];}}
+  if(image){
+   // Shared transparent effects; the imported drawing itself is never pixelized.
+   Sprite effect;if(action==Action::Pet||action==Action::Happy||action==Action::Shy){effect.heart(4,5);effect.heart(37,4);}
+   if(action==Action::Sleep){effect.box(37,3,6,1,0xffead9bd);effect.box(41,4,1,1,0xffead9bd);effect.box(39,5,2,1,0xffead9bd);effect.box(37,6,1,1,0xffead9bd);effect.box(37,7,6,1,0xffead9bd);}
+   if(action==Action::Angry){effect.box(38,5,2,3,0xffe68892);effect.box(41,8,3,2,0xffe68892);effect.box(38,10,2,3,0xffe68892);effect.box(34,8,3,2,0xffe68892);}
+   int unit=std::max(1,petSize/48),left=(canvas-48*unit)/2,top=(canvas-48*unit)/2;
+   for(int y=0;y<48;++y)for(int x=0;x<48;++x)if(auto color=effect.pixels[y*48+x])for(int j=0;j<unit;++j)for(int i=0;i<unit;++i){int xx=left+x*unit+i,yy=top+y*unit+j;if(xx>=0&&xx<canvas&&yy>=0&&yy<canvas)bits[yy*canvas+xx]=color;}
+  }
   POINT dest{c.x,c.y},src{0,0};SIZE sz{canvas,canvas};BLENDFUNCTION blend{AC_SRC_OVER,0,BYTE(c.opacity*255/100),AC_SRC_ALPHA};UpdateLayeredWindow(window,nullptr,&dest,&sz,memory,&src,0,&blend,ULW_ALPHA);
  }
  void placeBubble(){
@@ -77,7 +98,7 @@ struct App{
  bool isFullscreen(){auto w=GetForegroundWindow();if(!w||w==window||w==bubble||w==GetShellWindow()||!IsWindowVisible(w)||IsIconic(w))return false;wchar_t cls[128]{};GetClassNameW(w,cls,128);if(wcscmp(cls,L"Progman")==0||wcscmp(cls,L"WorkerW")==0||wcsstr(cls,L"TrayWnd"))return false;RECT r{};if(!GetWindowRect(w,&r))return false;MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromWindow(w,MONITOR_DEFAULTTONEAREST),&mi);return r.left<=mi.rcMonitor.left+2&&r.top<=mi.rcMonitor.top+2&&r.right>=mi.rcMonitor.right-2&&r.bottom>=mi.rcMonitor.bottom-2;}
  void visibility(){bool was=fullscreenHidden;fullscreenHidden=c.autoHide&&isFullscreen();if(hidden()){ShowWindow(window,SW_HIDE);ShowWindow(bubble,SW_HIDE);KillTimer(window,2);}else{ShowWindow(window,SW_SHOWNOACTIVATE);if(was&&c.timer.pending)reminder();render();placeBubble();scheduleFrame();}}
  void tick(){auto t=GetTickCount64();if(c.timer.tick(now())){lastInput=t;reminder();persist();}visibility();if(updates.busy())tray();if(!menuOpen&&!c.timer.pending&&bubbleEnd&&t>=bubbleEnd){speech.clear();bubbleEnd=0;ShowWindow(bubble,SW_HIDE);}if(c.autoUpdate&&updates.enabled()&&!updates.busy()&&(now()-c.lastCheck>=86400||now()<c.lastCheck)){c.lastCheck=now();updates.check();persist();}if(!menuOpen)updateTick();}
- void animate(){if(menuOpen)return;auto t=GetTickCount64();if(!dragging&&!c.timer.pending){if(t-lastInput>=300000){if(action!=Action::Sleep){action=Action::Sleep;actionEnd=0;speak(say("sleep"));}}else if(actionEnd&&t>=actionEnd){action=Action::Idle;actionEnd=0;}if(!actionEnd&&action!=Action::Sleep&&t>=nextIdle){static Action idle[]={Action::Blink,Action::Yawn,Action::Stretch,Action::Belly,Action::Happy};action=idle[rng()%5];actionEnd=t+(action==Action::Blink?250:2300);nextIdle=t+15000+rng()%30000;}}render();scheduleFrame();}
+ void animate(){if(menuOpen)return;auto t=GetTickCount64();if(!dragging&&!c.timer.pending){if(t-lastInput>=300000){if(action!=Action::Sleep){action=Action::Sleep;actionEnd=0;speak(say("sleep"));}}else if(actionEnd&&t>=actionEnd){action=Action::Idle;actionEnd=0;}if(!actionEnd&&action!=Action::Sleep&&t>=nextIdle){static Action idle[]={Action::Blink,Action::Yawn,Action::Stretch,Action::Belly,Action::Happy};action=idle[rng()%5];actionEnd=t+(c.pet==2?custom.duration(action,action==Action::Blink?250u:2300u):(action==Action::Blink?250u:2300u));nextIdle=t+15000+rng()%30000;}}render();scheduleFrame();}
  void applyPass(){auto ex=GetWindowLongPtrW(window,GWL_EXSTYLE);if(c.pass)ex|=WS_EX_TRANSPARENT;else ex&=~LONG_PTR(WS_EX_TRANSPARENT);SetWindowLongPtrW(window,GWL_EXSTYLE,ex);SetWindowLongPtrW(bubble,GWL_EXSTYLE,(GetWindowLongPtrW(bubble,GWL_EXSTYLE)&~LONG_PTR(WS_EX_TRANSPARENT))|(c.pass?WS_EX_TRANSPARENT:0));}
  void showForm(Form&f){if(formOpen)return;formOpen=true;f.show(window,instance);formOpen=false;lastInput=GetTickCount64();}
  void timerForm(Mode mode){Form f;f.title=mode==Mode::Countdown?L"倒數計時":mode==Mode::Interval?L"循環提醒":L"鬧鐘設定";int n=std::clamp(c.timer.interval,1,Timer::maxInterval(mode));
@@ -88,8 +109,29 @@ struct App{
  }
  void oneNumber(const std::wstring&title,int value,int lo,int hi,const std::function<void(int)>&save){Form f;f.title=title;f.fields.emplace_back(L"數值（"+std::to_wstring(lo)+L"～"+std::to_wstring(hi)+L"）",std::to_wstring(value));f.apply=[&](auto&v){save(number(v[0].value,lo,hi));persist();return true;};showForm(f);}
  void preferences(){Form f;f.title=L"偏好設定";f.fields={{L"全螢幕自動隱藏",c.autoHide?L"1":L"0",true},{L"開機自動啟動",c.startup?L"1":L"0",true},{L"自動檢查更新",c.autoUpdate?L"1":L"0",true},{L"預設延後（分鐘）",std::to_wstring(c.timer.snoozeMinutes)},{L"略過版本",wide(c.skip)}};f.apply=[&](auto&v){int snooze=number(v[3].value,1,1440);bool startup=v[1].value==L"1";setStartup(startup);c.startup=startup;c.autoHide=v[0].value==L"1";c.autoUpdate=v[2].value==L"1";c.timer.snoozeMinutes=snooze;c.skip=utf8(v[4].value);visibility();persist();return true;};showForm(f);}
- void command(UINT id){lastInput=GetTickCount64();if(id>=Coat0&&id<Coat0+5){c.coat=int(id-Coat0);render();persist();return;}if(id>=Quick0&&id<Quick0+5){int mins[]={5,15,25,30,60};c.timer.mode=Mode::Countdown;c.timer.interval=mins[id-Quick0]*60;c.timer.start(now());speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();return;}
-  switch(id){case Countdown:timerForm(Mode::Countdown);break;case Interval:timerForm(Mode::Interval);break;case Alarm:timerForm(Mode::Alarm);break;case Pause:if(c.timer.paused)c.timer.resume(now());else c.timer.pause(now());persist();break;case Stop:c.timer.stop();speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();break;case Reset:c.timer.start(now());speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();break;case Acknowledge:if(MessageBoxW(window,(wide(c.timer.title)+L"\n\n"+wide(c.timer.text)+L"\n\n確認此提醒？").c_str(),L"待處理提醒",MB_YESNO|MB_ICONINFORMATION)==IDYES)acknowledge();break;case Snooze5:defer(5);break;case Snooze10:defer(10);break;case Snooze15:defer(15);break;case SnoozeCustom:oneNumber(L"延後提醒（分鐘）",c.timer.snoozeMinutes,1,1440,[&](int n){defer(n);});break;case Cat:case Dog:c.pet=id==Dog?1:0;render();persist();break;case Rename:{Form f;f.title=L"修改名稱";f.fields.emplace_back(L"寵物名稱",wide(c.name));f.apply=[&](auto&v){if(v[0].value.empty()||v[0].value.size()>30)throw std::runtime_error("名字需為 1～30 字");c.name=utf8(v[0].value);tray();persist();return true;};showForm(f);break;}case Size:oneNumber(L"大小（%）",c.scale,50,300,[&](int n){c.scale=n;sizeChanged();});break;case Opacity:oneNumber(L"透明度（%）",c.opacity,20,100,[&](int n){c.opacity=n;render();});break;case Top:c.top=!c.top;clampPosition();placeBubble();persist();break;case Pass:c.pass=!c.pass;applyPass();persist();break;case Visibility:manualHidden=!manualHidden;visibility();if(!manualHidden&&c.timer.pending)reminder();break;case Preferences:preferences();break;case CheckUpdate:if(updates.busy()){if(MessageBoxW(window,L"更新作業進行中。要取消嗎？",L"更新",MB_YESNO|MB_ICONQUESTION)==IDYES)updates.cancel();}else{manualCheck=true;updates.check();if(!updates.enabled()){error(wide(updates.message()));manualCheck=false;}}break;case About:MessageBoxW(window,(L"DesktopPet "+wide(PET_VERSION)+L"\n原創像素桌面寵物\n完全無聲 · 離線運作（更新除外）\n授權條款尚未指定。").c_str(),L"關於 DesktopPet",MB_OK);break;case Exit:DestroyWindow(window);break;}
+ void selectPet(int pet){
+  if(pet==2&&!custom.ready()){error(L"請先匯入自訂寵物的待機 PNG／GIF。");return;}
+  if(c.pet!=2)c.builtinName=c.name;
+  c.pet=pet;c.name=pet==2?c.customName:c.builtinName;render();tray();persist();
+ }
+ void importCustom(int state){
+  if(state>0&&!custom.ready()){error(L"請先匯入自訂寵物。");return;}
+  wchar_t file[32768]{};OPENFILENAMEW picker{};picker.lStructSize=sizeof(picker);picker.hwndOwner=window;
+  picker.lpstrFilter=L"透明 PNG／GIF\0*.png;*.gif\0";picker.lpstrFile=file;picker.nMaxFile=32768;
+  picker.lpstrTitle=L"選擇離線寵物素材";picker.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR|OFN_DONTADDTORECENT;
+  if(!GetOpenFileNameW(&picker)){if(CommDlgExtendedError())error(L"無法開啟素材選擇視窗。");return;}
+  auto bytes=readBytes(file,8*1024*1024);auto header=inspectImage(bytes);
+  auto name=sha256(bytes)+(header.gif?".gif":".png");auto stored=customDirectory()/wide(name);rejectReparse(stored);
+  atomicWrite(stored,bytes.data(),bytes.size());auto decoded=decodeCustom(stored);
+  if(state==0){
+   Form f;f.title=L"自訂寵物名稱";auto proposed=fs::path(file).stem().wstring();if(proposed.empty()||proposed.size()>30)proposed=L"自訂寵物";
+   f.fields.emplace_back(L"名稱（1～30 字）",proposed);
+   f.apply=[&](auto&fields){auto text=fields[0].value;if(text.empty()||text.size()>30)throw std::runtime_error("名字需為 1～30 字");
+    custom=CustomPet{};custom.set(0,std::move(decoded));c.customFiles=Json{};c.customFiles[customStates[0]]=name;c.customName=utf8(text);selectPet(2);return true;};showForm(f);
+  }else{custom.set(state,std::move(decoded));c.customFiles[customStates[state]]=name;render();persist();}
+ }
+ void command(UINT id){if(id>=CustomAction0&&id<CustomAction0+7){importCustom(int(id-CustomAction0));return;}lastInput=GetTickCount64();if(id>=Coat0&&id<Coat0+5){if(c.pet==2)return;c.coat=int(id-Coat0);render();persist();return;}if(id>=Quick0&&id<Quick0+5){int mins[]={5,15,25,30,60};c.timer.mode=Mode::Countdown;c.timer.interval=mins[id-Quick0]*60;c.timer.start(now());speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();return;}
+  switch(id){case Countdown:timerForm(Mode::Countdown);break;case Interval:timerForm(Mode::Interval);break;case Alarm:timerForm(Mode::Alarm);break;case Pause:if(c.timer.paused)c.timer.resume(now());else c.timer.pause(now());persist();break;case Stop:c.timer.stop();speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();break;case Reset:c.timer.start(now());speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();break;case Acknowledge:if(MessageBoxW(window,(wide(c.timer.title)+L"\n\n"+wide(c.timer.text)+L"\n\n確認此提醒？").c_str(),L"待處理提醒",MB_YESNO|MB_ICONINFORMATION)==IDYES)acknowledge();break;case Snooze5:defer(5);break;case Snooze10:defer(10);break;case Snooze15:defer(15);break;case SnoozeCustom:oneNumber(L"延後提醒（分鐘）",c.timer.snoozeMinutes,1,1440,[&](int n){defer(n);});break;case Cat:case Dog:selectPet(id==Dog?1:0);break;case ImportCustom:importCustom(0);break;case SelectCustom:selectPet(2);break;case Rename:{Form f;f.title=L"修改名稱";f.fields.emplace_back(L"寵物名稱",wide(c.name));f.apply=[&](auto&v){if(v[0].value.empty()||v[0].value.size()>30)throw std::runtime_error("名字需為 1～30 字");c.name=utf8(v[0].value);if(c.pet==2)c.customName=c.name;else c.builtinName=c.name;tray();persist();return true;};showForm(f);break;}case Size:oneNumber(L"大小（%）",c.scale,50,300,[&](int n){c.scale=n;sizeChanged();});break;case Opacity:oneNumber(L"透明度（%）",c.opacity,20,100,[&](int n){c.opacity=n;render();});break;case Top:c.top=!c.top;clampPosition();placeBubble();persist();break;case Pass:c.pass=!c.pass;applyPass();persist();break;case Visibility:manualHidden=!manualHidden;visibility();if(!manualHidden&&c.timer.pending)reminder();break;case Preferences:preferences();break;case CheckUpdate:if(updates.busy()){if(MessageBoxW(window,L"更新作業進行中。要取消嗎？",L"更新",MB_YESNO|MB_ICONQUESTION)==IDYES)updates.cancel();}else{manualCheck=true;updates.check();if(!updates.enabled()){error(wide(updates.message()));manualCheck=false;}}break;case About:MessageBoxW(window,(L"DesktopPet "+wide(PET_VERSION)+L"\n原創像素桌面寵物\n完全無聲 · 離線運作（更新除外）\n授權條款尚未指定。").c_str(),L"關於 DesktopPet",MB_OK);break;case Exit:DestroyWindow(window);break;}
  }
  void menu(POINT p){
   if(menuOpen)return;
@@ -111,7 +153,9 @@ struct App{
   if(c.timer.running){auto label=c.timer.paused?L"計時：已暫停":L"計時：進行中";std::wstring status=label;if(!c.timer.paused&&c.timer.due){auto sec=std::max<Seconds>(0,c.timer.due-now());status+=L"（剩餘 "+std::to_wstring(sec/3600)+L":"+(sec/60%60<10?L"0":L"")+std::to_wstring(sec/60%60)+L":"+(sec%60<10?L"0":L"")+std::to_wstring(sec%60)+L"）";}add(0,status.c_str(),MF_GRAYED);add(Pause,c.timer.paused?L"繼續計時":L"暫停計時");add(Stop,L"停止計時");}add(Reset,L"重設並開始計時");
   if(c.timer.pending){std::wstring label=L"確認提醒："+wide(c.timer.title);add(Acknowledge,label.c_str());add(Snooze5,L"延後 5 分鐘");add(Snooze10,L"延後 10 分鐘");add(Snooze15,L"延後 15 分鐘");add(SnoozeCustom,L"自訂延後…");}
   AppendMenuW(m,MF_SEPARATOR,0,nullptr);add(Countdown,L"倒數計時…");add(Interval,L"循環提醒…");add(Alarm,L"鬧鐘設定…");HMENU quick=CreatePopupMenu();const wchar_t*q[]={L"5 分鐘",L"15 分鐘",L"25 分鐘",L"30 分鐘",L"60 分鐘"};for(int i=0;i<5;++i)AppendMenuW(quick,MF_STRING,Quick0+i,q[i]);AppendMenuW(m,MF_POPUP,reinterpret_cast<UINT_PTR>(quick),L"快捷倒數");
-  AppendMenuW(m,MF_SEPARATOR,0,nullptr);HMENU pets=CreatePopupMenu();AppendMenuW(pets,MF_STRING|(c.pet==0?MF_CHECKED:0),Cat,L"貓咪");AppendMenuW(pets,MF_STRING|(c.pet==1?MF_CHECKED:0),Dog,L"狗狗");AppendMenuW(m,MF_POPUP,reinterpret_cast<UINT_PTR>(pets),L"更換寵物");HMENU coats=CreatePopupMenu();for(int i=0;i<5;++i)AppendMenuW(coats,MF_STRING|(i==c.coat?MF_CHECKED:0),Coat0+i,c.pet?dogs[i]:cats[i]);AppendMenuW(m,MF_POPUP,reinterpret_cast<UINT_PTR>(coats),L"更換毛色");add(Rename,L"修改名稱…");add(Size,L"調整大小…");add(Opacity,L"調整透明度…");add(Top,L"永遠置頂",c.top?MF_CHECKED:0);add(Pass,L"滑鼠穿透（可由系統匣解除）",c.pass?MF_CHECKED:0);add(Visibility,manualHidden?L"顯示寵物":L"隱藏寵物");add(Preferences,L"偏好設定…");std::wstring updateLabel=updates.busy()?L"更新作業 "+std::to_wstring(updates.progress())+L"%（點選取消）":L"檢查更新…";add(CheckUpdate,updateLabel.c_str());add(About,L"關於…");add(Exit,L"結束程式");
+  AppendMenuW(m,MF_SEPARATOR,0,nullptr);HMENU pets=CreatePopupMenu();AppendMenuW(pets,MF_STRING|(c.pet==0?MF_CHECKED:0),Cat,L"貓咪");AppendMenuW(pets,MF_STRING|(c.pet==1?MF_CHECKED:0),Dog,L"狗狗");AppendMenuW(pets,MF_STRING|(c.pet==2?MF_CHECKED:0)|(custom.ready()?0:MF_GRAYED),SelectCustom,L"自訂寵物");AppendMenuW(m,MF_POPUP,reinterpret_cast<UINT_PTR>(pets),L"更換寵物");add(ImportCustom,L"匯入自訂寵物 PNG／GIF…");
+  if(custom.ready()){HMENU actions=CreatePopupMenu();const wchar_t* labels[]={L"待機（重新匯入角色）…",L"眨眼…",L"睡覺…",L"撒嬌…",L"生氣…",L"愛心…",L"提醒…"};for(int i=0;i<7;++i)AppendMenuW(actions,MF_STRING,CustomAction0+i,labels[i]);AppendMenuW(m,MF_POPUP,reinterpret_cast<UINT_PTR>(actions),L"匯入自訂動作素材");}
+  HMENU coats=CreatePopupMenu();for(int i=0;i<5;++i)AppendMenuW(coats,MF_STRING|(i==c.coat?MF_CHECKED:0),Coat0+i,c.pet?dogs[i]:cats[i]);AppendMenuW(m,MF_POPUP|(c.pet==2?MF_GRAYED:0),reinterpret_cast<UINT_PTR>(coats),L"更換毛色");add(Rename,L"修改名稱…");add(Size,L"調整大小…");add(Opacity,L"調整透明度…");add(Top,L"永遠置頂",c.top?MF_CHECKED:0);add(Pass,L"滑鼠穿透（可由系統匣解除）",c.pass?MF_CHECKED:0);add(Visibility,manualHidden?L"顯示寵物":L"隱藏寵物");add(Preferences,L"偏好設定…");std::wstring updateLabel=updates.busy()?L"更新作業 "+std::to_wstring(updates.progress())+L"%（點選取消）":L"檢查更新…";add(CheckUpdate,updateLabel.c_str());add(About,L"關於…");add(Exit,L"結束程式");
   SetForegroundWindow(window);UINT id=TrackPopupMenu(m,TPM_RETURNCMD|TPM_RIGHTBUTTON,p.x,p.y,0,window,nullptr);DestroyMenu(m);PostMessageW(window,WM_NULL,0,0);if(id)command(id);
   }catch(...){finish();throw;}
   finish();
@@ -136,11 +180,13 @@ struct App{
   }catch(const std::exception&e){self->error(L"操作未完成："+wide(e.what()));}return DefWindowProcW(w,m,wp,lp);
  }
  bool init(bool restore){singleton=CreateMutexW(nullptr,FALSE,L"Local\\DesktopPet.SingleInstance");if(!singleton||GetLastError()==ERROR_ALREADY_EXISTS)return false;config=settingsPath();try{c.load(Json::parse(readText(config)),restore);}catch(...){/* Missing/corrupt settings use documented defaults. */}
+  std::string assetFailure;bool customLoaded=custom.load(c,&assetFailure);
+  if(c.pet==2){if(customLoaded)c.name=c.customName;else{c.pet=0;c.name=c.builtinName;}}
   try{dialogue=Json::parse(readText(executable().parent_path()/L"data"/L"dialogue.json"));}catch(...){dialogue=Json{};}
   WNDCLASSW wc{};wc.hInstance=instance;wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);wc.lpfnWndProc=proc;wc.lpszClassName=L"DesktopPetWindow";wc.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(1));RegisterClassW(&wc);wc.lpfnWndProc=bubbleProc;wc.lpszClassName=L"DesktopPetBubble";RegisterClassW(&wc);
   window=CreateWindowExW(WS_EX_LAYERED|WS_EX_TOOLWINDOW|WS_EX_NOACTIVATE,L"DesktopPetWindow",L"DesktopPet",WS_POPUP,c.x,c.y,144,144,nullptr,nullptr,instance,this);if(!window)throw std::runtime_error("Cannot create pet window");
   bubble=CreateWindowExW(WS_EX_TOOLWINDOW|WS_EX_NOACTIVATE,L"DesktopPetBubble",L"",WS_POPUP,0,0,10,10,window,nullptr,instance,this);if(!bubble)throw std::runtime_error("Cannot create bubble");
-  if(!c.positioned){MONITORINFO mi{sizeof(mi)};POINT zero{0,0};GetMonitorInfoW(MonitorFromPoint(zero,MONITOR_DEFAULTTOPRIMARY),&mi);c.x=mi.rcWork.right-170;c.y=mi.rcWork.bottom-170;}sizeChanged();applyPass();taskbar=RegisterWindowMessageW(L"TaskbarCreated");tray(true);lastInput=GetTickCount64();nextIdle=lastInput+20000;frameTime=lastInput;loading=false;SetTimer(window,1,1000,nullptr);visibility();if(c.timer.pending)reminder();if(c.autoUpdate&&updates.enabled()){c.lastCheck=now();updates.check();}persist();return true;
+  if(!c.positioned){MONITORINFO mi{sizeof(mi)};POINT zero{0,0};GetMonitorInfoW(MonitorFromPoint(zero,MONITOR_DEFAULTTOPRIMARY),&mi);c.x=mi.rcWork.right-170;c.y=mi.rcWork.bottom-170;}sizeChanged();applyPass();taskbar=RegisterWindowMessageW(L"TaskbarCreated");tray(true);lastInput=GetTickCount64();nextIdle=lastInput+20000;frameTime=lastInput;loading=false;SetTimer(window,1,1000,nullptr);visibility();if(!assetFailure.empty())speak(L"部分自訂素材無法載入，已使用預設動作或橘貓。");if(c.timer.pending)reminder();if(c.autoUpdate&&updates.enabled()){c.lastCheck=now();updates.check();}persist();return true;
  }
 };
 }

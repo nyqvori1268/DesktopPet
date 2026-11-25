@@ -5,6 +5,11 @@
 #include <set>
 #include <random>
 #include <functional>
+#include <fstream>
+#include <filesystem>
+#ifndef PET_TEST_FIXTURES
+#define PET_TEST_FIXTURES "tests/fixtures"
+#endif
 using namespace pet;
 static int checks=0;
 static void check(bool ok,const char*name){++checks;if(!ok)throw std::runtime_error(name);}
@@ -78,8 +83,38 @@ static void timerRegressions(){
  legacy["mode"]=int(Mode::Countdown);migrated=Timer{};migrated.load(legacy,true);check(migrated.interval==604800&&migrated.due==605800,"countdown legacy limit unchanged");
  legacy["mode"]=int(Mode::Alarm);migrated=Timer{};migrated.load(legacy,true);check(migrated.interval==604800,"alarm configuration limit unchanged");
 }
+static std::vector<unsigned char> fixture(const std::string&name){
+ std::ifstream file(std::filesystem::u8path(PET_TEST_FIXTURES)/name,std::ios::binary);
+ if(!file)throw std::runtime_error("Missing image test fixture");
+ return {std::istreambuf_iterator<char>(file),std::istreambuf_iterator<char>()};
+}
+static void imageRegressions(){
+ auto png=fixture("alpha.png");auto meta=inspectImage(png);check(meta.width==16&&meta.height==16&&meta.frames==1&&!meta.gif,"PNG header");
+ auto gif=fixture("disposal.gif");meta=inspectImage(gif);check(meta.width==8&&meta.height==8&&meta.frames==4&&meta.gif,"GIF partial-frame header and extensions");
+ for(size_t i=0;i<gif.size();++i){auto cut=std::vector<unsigned char>(gif.begin(),gif.begin()+i);rejects([&]{inspectImage(cut);},"truncated GIF rejected");}
+ auto oversized=png;oversized[16]=0x7f;rejects([&]{inspectImage(oversized);},"oversize PNG rejected before decode");
+ auto wrong=png;wrong[12]='X';rejects([&]{inspectImage(wrong);},"invalid IHDR");rejects([]{inspectImage({'J','P','E','G'});},"unapproved format");
+ rejects([]{inspectImage(std::vector<unsigned char>(8*1024*1024+1));},"encoded size limit");
+ auto hugeGif=gif;hugeGif[6]=0;hugeGif[7]=8;hugeGif[8]=0;hugeGif[9]=8;rejects([&]{inspectImage(hugeGif);},"GIF aggregate decoded budget");
+ ImageClip clip;clip.width=5;clip.height=4;clip.frames.resize(2);for(auto&f:clip.frames)f.pixels.resize(20);
+ clip.frames[0].delay=100;clip.frames[1].delay=200;clip.frames[0].pixels[6]=0x80800000;clip.frames[0].pixels[7]=0xff00ff00;clip.frames[1].pixels[13]=0xff0000ff;
+ clip.findCrop();check(clip.crop.x==1&&clip.crop.y==1&&clip.crop.w==3&&clip.crop.h==2,"union alpha crop across all frames");
+ check(clip.sample(0,1.5,1)==0xc0408000,"bilinear premultiplied alpha has no black halo");
+ auto trimmed=trimClip(clip);check(trimmed.width==3&&trimmed.height==2&&trimmed.frames[0].pixels[0]==0x80800000&&trimmed.frames[1].pixels[5]==0xff0000ff,"crop does not pixelize or discard late-frame bounds");
+ check(trimmed.frameAt(0)==0&&trimmed.frameAt(99)==0&&trimmed.frameAt(100)==1&&trimmed.frameAt(299)==1&&trimmed.frameAt(300)==0,"GIF timeline exact boundary and loop");
+ ImageClip empty;empty.width=empty.height=1;empty.frames.push_back({{0},100});rejects([&]{trimClip(empty);},"fully transparent image rejected");empty.frames[0].pixels.clear();rejects([&]{empty.findCrop();},"invalid pixel count rejected");
+ ImageClip whitespace;whitespace.width=whitespace.height=512;whitespace.frames.push_back({std::vector<uint32_t>(512*512),100});whitespace.frames[0].pixels[250*512+250]=0xffffffff;auto small=trimClip(std::move(whitespace));check(small.width==1&&small.height==1,"trim before resampling preserves small artwork");
+ check(gifDelay(0)==40&&gifDelay(1)==40&&gifDelay(8)==80&&gifDelay(999999)==10000,"bounded GIF timing");
+ rejects([]{decodeSide(0);},"zero frames rejected");rejects([]{decodeSide(121);},"frame count limit");for(unsigned count=1;count<=120;++count){int side=decodeSide(count);check(side<=256&&uint64_t(side)*side*count*4<=2*1024*1024,"bounded frame cache");}
+ check(customFileName(std::string(64,'a')+".png")&&customFileName(std::string(64,'f')+".gif"),"content hash filenames allowed");
+ for(auto name:{"../idle.png","C:/idle.gif","https://example.com/a.png","idle.png","a.png:evil"})check(!customFileName(name),"arbitrary paths rejected");
+ check(customState(Action::Blink)==1&&customState(Action::Sleep)==2&&customState(Action::Happy)==3&&customState(Action::Angry)==4&&customState(Action::Pet)==5&&customState(Action::Remind)==6&&customState(Action::Drag)==0,"seven custom action slots");
+ Config custom;custom.pet=2;custom.customName="小桃";custom.name=custom.customName;custom.builtinName="小橘";custom.customFiles["idle"]=std::string(64,'a')+".png";custom.timer.start(1000);
+ Config restored;restored.load(Json::parse(custom.json().dump()),true);check(restored.pet==2&&restored.name=="小桃"&&restored.builtinName=="小橘"&&restored.customFiles["idle"].str()==custom.customFiles["idle"].str()&&restored.timer.due==custom.timer.due,"custom profile and timer roundtrip");
+ auto bad=custom.json();bad["customFiles"]["idle"]="../../config.json";restored.load(bad,true);check(restored.customFiles["idle"].str().empty(),"bad asset path ignored without changing timer");
+}
 int main(){try{
- timerRegressions();
+ imageRegressions();timerRegressions();
  auto j=Json::parse("{\"text\":\"繁體中文\\n\\uD83D\\uDC31\",\"n\":-1.25e2,\"b\":true,\"a\":[null,2]}");check(j["n"].num()==-125,"json number");check(Json::parse(j.dump()).dump()==j.dump(),"json roundtrip");check(j["missing"].str("fallback")=="fallback","missing default");
  for(auto s:{"", "01","1.","1e", "NaN","1e999", "[1,]", "{\"a\":1,\"a\":2}","\"\\uD800\"", "true false", "\"x\n\""})rejects([&]{Json::parse(s);},"strict JSON rejection");
  rejects([]{Json::parse(std::string(40,'[')+std::string(40,']'));},"JSON nesting bound");rejects([]{Json::parse(std::string(1024*1024+1,' '));},"JSON size bound");

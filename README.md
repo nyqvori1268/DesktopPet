@@ -1,4 +1,4 @@
-# DesktopPet 1.0.0
+# DesktopPet 1.1.0
 
 Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲，沒有帳號、遙測、廣告或常駐服務。除了可選的 GitHub 更新，不使用網路。授權條款尚未指定；本專案不替作者選定正式授權。
 
@@ -16,7 +16,17 @@ Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲�
 
 從你部署的 GitHub Releases 下載 `DesktopPet-windows-x64.zip`，完整解壓到可寫入的資料夾，執行 `DesktopPet.exe`。不要只取出 EXE；保留 `Updater.exe` 與 `data/dialogue.json`。無需安裝或管理員權限，MSVC Runtime 靜態連結。
 
-**此原始碼交付尚未附 Windows EXE。** 本次環境無 MSVC、Windows SDK 與 Windows 桌面，Windows Release 建置須由下方本機指令或 GitHub Actions 執行；其結果不能視為已通過。詳見 [驗證紀錄](docs/TESTING.md)。
+**此 v1.1.0 原始碼交付尚未附 Windows EXE。** v1.0.0 已由使用者回報 Actions 編譯及執行成功；本次環境無 MSVC、Windows SDK 與 Windows 桌面，v1.1.0 Windows Release 建置須由下方本機指令或 GitHub Actions 執行，尚未驗證。詳見 [驗證紀錄](docs/TESTING.md)。
+
+## 自訂寵物 PNG／GIF
+
+右鍵選單 →「匯入自訂寵物 PNG／GIF…」選擇本地檔並輸入名稱；原有十種角色保留，可從「更換寵物」切回。重新匯入待機檔會替換目前自訂角色並清除其動作設定，目前保留一個自訂角色槽。
+
+「匯入自訂動作素材」可指定待機、眨眼、睡覺、撒嬌、生氣、愛心、提醒七個 PNG／GIF。保留原畫、透明背景，依所有影格的 alpha 聯集裁切，平滑縮放；沒有動作素材時使用呼吸、短暫壓縮、伸縮、搖動、愛心／睡眠符號及既有提醒跳躍。**缺少眨眼原畫時只做短暫壓縮，不會猜測並重繪角色眼睛。**
+
+素材複製至 `%LOCALAPPDATA%\DesktopPet\custom-pets`，完全離線播放；更新不覆蓋該資料夾。每檔上限 8 MiB／2048×2048／120 影格，完整解碼畫布總量限 16 MiB，每個動作快取限約 2 MiB（最多邊長 256）；較大素材會在裁切後縮小。僅裁掉透明留白，不自動去除不透明背景。
+
+小桃（モモンガ）的官方預覽只作本地測試，未取得再散布許可，不包含於原始碼或發布 ZIP。授權來源、限制及測試方式見 [自訂素材文件](docs/CUSTOM_PETS.md)。
 
 ## 操作
 

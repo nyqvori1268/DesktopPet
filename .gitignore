@@ -9,3 +9,7 @@ config.json*
 signing-key*
 .vs/
 *.user
+
+# Imported artwork is local user data, never a release asset.
+/custom-pets/
+/local-only/
