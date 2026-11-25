@@ -12,7 +12,74 @@ static void rejects(const std::function<void()>&f,const char*name){bool rejected
 static void p16(std::vector<unsigned char>&b,unsigned v){b.push_back(v&255);b.push_back((v>>8)&255);}
 static void p32(std::vector<unsigned char>&b,uint32_t v){p16(b,v&65535);p16(b,v>>16);}
 static std::vector<unsigned char> zip(const std::vector<std::string>&names){std::vector<unsigned char>b,cd;for(auto&name:names){auto offset=b.size();std::string data="pet: "+name;auto crc=crc32(reinterpret_cast<const unsigned char*>(data.data()),data.size());p32(b,0x04034b50);p16(b,20);p16(b,0);p16(b,0);p32(b,0);p32(b,crc);p32(b,uint32_t(data.size()));p32(b,uint32_t(data.size()));p16(b,unsigned(name.size()));p16(b,0);b.insert(b.end(),name.begin(),name.end());b.insert(b.end(),data.begin(),data.end());p32(cd,0x02014b50);p16(cd,20);p16(cd,20);p16(cd,0);p16(cd,0);p32(cd,0);p32(cd,crc);p32(cd,uint32_t(data.size()));p32(cd,uint32_t(data.size()));p16(cd,unsigned(name.size()));p16(cd,0);p16(cd,0);p16(cd,0);p16(cd,0);p32(cd,0);p32(cd,uint32_t(offset));cd.insert(cd.end(),name.begin(),name.end());}auto offset=b.size();b.insert(b.end(),cd.begin(),cd.end());p32(b,0x06054b50);p16(b,0);p16(b,0);p16(b,unsigned(names.size()));p16(b,unsigned(names.size()));p32(b,uint32_t(cd.size()));p32(b,uint32_t(offset));p16(b,0);return b;}
+// All clocks below are simulated seconds; no sleeps or real-time waits.
+static void timerRegressions(){
+ for(auto mode:{Mode::Countdown,Mode::Interval,Mode::Alarm}){
+  for(int minutes:{5,10,15,17}){
+   Timer t;t.mode=mode;t.interval=1800;t.repeat=0;
+   t.start(1000);const Seconds first=t.due;
+   check(t.tick(first)&&t.pending,"initial reminder");
+   const Seconds phase=t.due;t.defer(first,minutes);
+   const Seconds deadline=first+minutes*60;
+   check(!t.pending&&t.running&&t.snooze==deadline,"defer clears pending and schedules chosen duration");
+   check(!t.tick(deadline-1)&&!t.pending,"snooze never early");
+   check(t.tick(deadline)&&t.pending&&!t.snooze,"snooze delivered exactly at deadline");
+   check(!t.tick(deadline),"no duplicate at same timestamp");
+   if(mode==Mode::Interval)check(t.due==phase,"defer retains interval phase");
+   t.acknowledge();check(!t.pending,"deferred reminder can be acknowledged");
+   t.defer(deadline,minutes);check(!t.pending&&t.tick(deadline+minutes*60),"reminder can be deferred again");
+  }
+ }
+ // Interval rounds inside a snooze window merge into that one deferred reminder.
+ Timer t;t.mode=Mode::Interval;t.interval=60;t.start(1000);check(t.tick(1060),"short interval initial reminder");
+ t.defer(1060,5);check(!t.tick(1120)&&t.due==1180&&!t.pending,"next round cannot interrupt snooze");
+ check(!t.tick(1300)&&t.due==1360,"multiple covered rounds advance silently");
+ check(t.tick(1360)&&t.due==1420&&!t.snooze,"coincident snooze and round fire once");
+ check(!t.tick(1360),"coincident timestamp not repeated");t.acknowledge();check(t.tick(1420),"next original round retained");
+ t.defer(1420,5);check(t.tick(5000)&&t.due==5020&&!t.snooze,"wake after overlapping deadlines coalesces once");
+ check(!t.tick(5000),"wake does not replay overdue rounds");
+ t.stop();t.interval=180;t.start(1000);check(t.tick(1180),"offset interval first round");
+ t.defer(1180,5);check(!t.tick(1360)&&t.due==1540,"round before nonaligned snooze is merged");
+ check(t.tick(1480)&&t.due==1540,"nonaligned snooze deadline delivered");
+ t.acknowledge();check(t.tick(1540),"round after snooze not lost or phase shifted");
+ // Pausing a deferred single task must not resurrect its consumed due timestamp.
+ for(auto mode:{Mode::Countdown,Mode::Alarm}){
+  Timer single;single.mode=mode;single.interval=10;single.start(1000);auto first=single.due;
+  check(single.tick(first)&&single.due==0,"single task original deadline consumed");single.defer(first,5);
+  single.pause(first+30);check(!single.tick(first+10000),"deferred task stays paused");
+  single.resume(first+1000);check(single.due==0&&!single.tick(first+1000),"resume does not resurrect original deadline");
+  check(!single.tick(first+1269)&&single.tick(first+1270),"paused snooze keeps remaining duration");
+ }
+ // Repeating alarms also merge overlapping scheduled and deferred deadlines.
+ for(int repeat:{1,2}){
+  Timer alarm;alarm.mode=Mode::Alarm;alarm.alarmHour=9;alarm.alarmMinute=0;alarm.repeat=repeat;alarm.weekdays=127;
+  std::tm tm{};tm.tm_year=126;tm.tm_mon=0;tm.tm_mday=5;tm.tm_hour=8;tm.tm_isdst=-1;
+  auto clock=Seconds(std::mktime(&tm));alarm.start(clock);auto first=alarm.due;check(alarm.tick(first),"repeating alarm first reminder");
+  auto next=alarm.due;alarm.defer(first+60,1440);check(!alarm.tick(next)&&!alarm.pending,"alarm round during snooze coalesces");
+  auto snooze=alarm.snooze;check(alarm.tick(snooze)&&!alarm.snooze&&alarm.due>snooze,"daily or weekday alarm deferred delivery");
+ }
+ // Existing JSON fields suffice for update/restart recovery during a snooze.
+ t.mode=Mode::Interval;t.interval=60;t.start(1000);t.tick(1060);t.defer(1060,10);
+ Timer restored;restored.load(Json::parse(t.json().dump()),true);
+ check(!restored.tick(1600)&&restored.tick(1660)&&restored.due==1720,"restore keeps snooze and original phase");
+ auto legacyOverlap=t.json();legacyOverlap["pending"]=true;restored.load(legacyOverlap,true);
+ check(!restored.pending&&!restored.tick(1600)&&restored.tick(1660),"legacy overlap pending merges into existing snooze");
+ restored.stop();check(!restored.tick(9999),"stop cancels deferred reminder");
+ // UI and core share the same interval bound; other modes keep seven days.
+ check(Timer::maxInterval(Mode::Interval)==86400&&Timer::maxInterval(Mode::Countdown)==604800,"mode-specific limits");
+ for(int duration:{0,1,86399,86400,86401,86460,90000,604800}){
+  Timer interval;interval.mode=Mode::Interval;interval.interval=duration;
+  check(interval.validInterval()==(duration>=1&&duration<=86400),"interval validity boundary");
+  interval.start(1000);check(interval.interval==std::clamp(duration,1,86400),"start clamps invalid core interval");
+  Timer loaded;loaded.load(interval.json(),false);check(loaded.interval==interval.interval,"valid interval roundtrip");
+ }
+ Json legacy;legacy["mode"]=int(Mode::Interval);legacy["interval"]=604800;legacy["running"]=true;legacy["due"]=605800;legacy["remaining"]=604700;
+ Timer migrated;migrated.load(legacy,true);check(migrated.interval==86400&&migrated.due==87400&&migrated.remaining==86400,"legacy interval and active phase normalized");
+ legacy["mode"]=int(Mode::Countdown);migrated=Timer{};migrated.load(legacy,true);check(migrated.interval==604800&&migrated.due==605800,"countdown legacy limit unchanged");
+ legacy["mode"]=int(Mode::Alarm);migrated=Timer{};migrated.load(legacy,true);check(migrated.interval==604800,"alarm configuration limit unchanged");
+}
 int main(){try{
+ timerRegressions();
  auto j=Json::parse("{\"text\":\"繁體中文\\n\\uD83D\\uDC31\",\"n\":-1.25e2,\"b\":true,\"a\":[null,2]}");check(j["n"].num()==-125,"json number");check(Json::parse(j.dump()).dump()==j.dump(),"json roundtrip");check(j["missing"].str("fallback")=="fallback","missing default");
  for(auto s:{"", "01","1.","1e", "NaN","1e999", "[1,]", "{\"a\":1,\"a\":2}","\"\\uD800\"", "true false", "\"x\n\""})rejects([&]{Json::parse(s);},"strict JSON rejection");
  rejects([]{Json::parse(std::string(40,'[')+std::string(40,']'));},"JSON nesting bound");rejects([]{Json::parse(std::string(1024*1024+1,' '));},"JSON size bound");

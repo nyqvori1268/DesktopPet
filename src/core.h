@@ -30,22 +30,37 @@ struct Timer{
  Mode mode=Mode::Countdown; bool running=false,paused=false,pending=false;
  int interval=1800,alarmHour=9,alarmMinute=0,weekdays=127,repeat=0,snoozeMinutes=5;
  Seconds due=0,snooze=0,remaining=0;std::string title="時間到了",text="休息一下，陪陪我吧！";
+ static constexpr int maxInterval(Mode m){return m==Mode::Interval?86400:604800;}
+ bool validInterval()const{return interval>=1&&interval<=maxInterval(mode);}
  Seconds nextAlarm(Seconds t)const{auto tm=local(t);for(int d=0;d<9;++d){auto x=tm;x.tm_mday+=d;x.tm_hour=alarmHour;x.tm_min=alarmMinute;x.tm_sec=0;x.tm_isdst=-1;auto ts=static_cast<Seconds>(std::mktime(&x));if(ts<=t)continue;auto actual=local(ts);if(repeat!=2||(weekdays&(1<<actual.tm_wday)))return ts;}return 0;}
- void start(Seconds t){running=true;paused=false;pending=false;snooze=0;remaining=0;due=mode==Mode::Alarm?nextAlarm(t):t+interval;}
+ void start(Seconds t){interval=std::clamp(interval,1,maxInterval(mode));running=true;paused=false;pending=false;snooze=0;remaining=0;due=mode==Mode::Alarm?nextAlarm(t):t+interval;}
  void stop(){running=paused=pending=false;due=snooze=remaining=0;}
  void pause(Seconds t){if(running&&!paused){remaining=std::max<Seconds>(0,due-t);if(snooze)snooze=std::max<Seconds>(1,snooze-t);paused=true;}}
- void resume(Seconds t){if(running&&paused){due=t+remaining;if(snooze)snooze+=t;paused=false;}}
- // One event per tick, even after long sleep. Interval retains its original phase.
- bool tick(Seconds t){if(!running||paused)return false;bool fired=false;
-  if(snooze&&t>=snooze){snooze=0;fired=true;}
-  if(due&&t>=due){fired=true;if(mode==Mode::Interval){due+=((t-due)/interval+1)*interval;}else if(mode==Mode::Alarm&&repeat){due=nextAlarm(t);}else due=0;}
-  if(fired) {pending=true;if(!due&&!snooze)running=false;}
+ void resume(Seconds t){if(running&&paused){if(due)due=t+remaining;if(snooze)snooze+=t;paused=false;}}
+ // Advance scheduled rounds on their original phase. Rounds covered by a
+ // snooze merge into its single delivery; they cannot interrupt or replay it.
+ bool tick(Seconds t){
+  if(!running||paused)return false;
+  const bool deferred=snooze!=0;
+  bool fired=deferred&&t>=snooze;
+  if(due&&t>=due){
+   if(!deferred)fired=true;
+   if(mode==Mode::Interval){
+    const int step=std::clamp(interval,1,maxInterval(mode));
+    due+=((t-due)/step+1)*step;
+   }else if(mode==Mode::Alarm&&repeat)due=nextAlarm(t);
+   else due=0;
+  }
+  if(fired){snooze=0;pending=true;if(!due)running=false;}
   return fired;
  }
  void acknowledge(){pending=false;}
- void defer(Seconds t,int minutes){pending=false;snooze=t+std::clamp(minutes,1,1440)*60;running=true;paused=false;}
+ void defer(Seconds t,int minutes){
+  if(paused)resume(t);
+  pending=false;snooze=t+std::clamp(minutes,1,1440)*60;running=true;paused=false;
+ }
  Json json()const{Json j; j["mode"]=int(mode);j["running"]=running;j["paused"]=paused;j["pending"]=pending;j["interval"]=interval;j["hour"]=alarmHour;j["minute"]=alarmMinute;j["weekdays"]=weekdays;j["repeat"]=repeat;j["snoozeMinutes"]=snoozeMinutes;j["due"]=due;j["snooze"]=snooze;j["remaining"]=remaining;j["title"]=title;j["text"]=text;return j;}
- void load(const Json&j,bool restore){mode=Mode(bounded(j["mode"],0,0,2));interval=bounded(j["interval"],1800,1,604800);alarmHour=bounded(j["hour"],9,0,23);alarmMinute=bounded(j["minute"],0,0,59);weekdays=bounded(j["weekdays"],127,1,127);repeat=bounded(j["repeat"],0,0,2);snoozeMinutes=bounded(j["snoozeMinutes"],5,1,1440);title=clipUtf8(j["title"].str("時間到了"),360);text=clipUtf8(j["text"].str("休息一下，陪陪我吧！"),2000);if(restore){running=j["running"].boolean();paused=j["paused"].boolean();pending=j["pending"].boolean();due=Seconds(std::clamp(j["due"].num(),0.0,4102444800.0));snooze=Seconds(std::clamp(j["snooze"].num(),0.0,4102444800.0));remaining=Seconds(std::clamp(j["remaining"].num(),0.0,604800.0));}}
+ void load(const Json&j,bool restore){mode=Mode(bounded(j["mode"],0,0,2));const int savedInterval=bounded(j["interval"],1800,1,604800);interval=std::min(savedInterval,maxInterval(mode));alarmHour=bounded(j["hour"],9,0,23);alarmMinute=bounded(j["minute"],0,0,59);weekdays=bounded(j["weekdays"],127,1,127);repeat=bounded(j["repeat"],0,0,2);snoozeMinutes=bounded(j["snoozeMinutes"],5,1,1440);title=clipUtf8(j["title"].str("時間到了"),360);text=clipUtf8(j["text"].str("休息一下，陪陪我吧！"),2000);if(restore){running=j["running"].boolean();paused=j["paused"].boolean();pending=j["pending"].boolean();due=Seconds(std::clamp(j["due"].num(),0.0,4102444800.0));snooze=Seconds(std::clamp(j["snooze"].num(),0.0,4102444800.0));if(snooze)pending=false;remaining=Seconds(std::clamp(j["remaining"].num(),0.0,604800.0));if(mode==Mode::Interval&&savedInterval!=interval){if(due)due=std::max<Seconds>(1,due-savedInterval+interval);remaining=std::min<Seconds>(remaining,interval);}}}
 };
 struct Config{
  int schema=1,pet=0,coat=0,x=0,y=0,scale=100,opacity=100;bool positioned=false,top=true,pass=false,autoHide=true,startup=false,autoUpdate=true;std::string name="小橘",monitor,skip;Seconds lastCheck=0;Timer timer;
