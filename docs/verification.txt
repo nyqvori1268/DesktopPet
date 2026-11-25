@@ -1,0 +1,14 @@
+2026-11-25 / Linux x64 / GCC 14.2.0
+
+Command: g++ -std=c++17 -O2 -DNDEBUG -Wall -Wextra -Werror -pedantic -Isrc tests/core_tests.cpp -o build-local/core_tests_release
+Result: compiler exit 0, no warnings
+Command: ./build-local/core_tests_release
+PASS: 323381 checks; JSON/config/timers/alarm/semver/sprites/spring/ZIP
+
+Command: g++ -std=c++17 -g -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/core_tests.cpp -o build-local/core_tests_san
+Command: ASAN_OPTIONS=detect_leaks=0 ./build-local/core_tests_san
+PASS: 323381 checks; JSON/config/timers/alarm/semver/sprites/spring/ZIP
+LeakSanitizer unavailable under ptrace; leak detection disabled.
+
+JSON/XML/PNG/ICO parsed and decoded successfully.
+Windows Release compilation, native tests, GUI, updater transaction integration and performance were NOT executed.

@@ -1,0 +1,73 @@
+name: Windows build and release
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    env:
+      DESKTOPPET_PUBLIC_KEY: ${{ vars.DESKTOPPET_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure x64 / static runtime
+        shell: pwsh
+        run: |
+          $owner, $repo = '${{ github.repository }}'.Split('/')
+          cmake -S . -B build -A x64 "-DDESKTOPPET_OWNER=$owner" "-DDESKTOPPET_REPOSITORY=$repo" "-DDESKTOPPET_PUBLIC_KEY=$env:DESKTOPPET_PUBLIC_KEY"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Build Release
+        run: cmake --build build --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Check executable runtime imports
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath
+          $dumpbin = Get-ChildItem "$vs/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe" | Select-Object -Last 1
+          foreach ($exe in 'DesktopPet','Updater') {
+            $imports = & $dumpbin.FullName /dependents "build/Release/$exe.exe"
+            if ($LASTEXITCODE -or ($imports -match '(?i)(VCRUNTIME|MSVCP|ucrtbased|VCRUNTIME.*d)\d*\.dll')) { throw 'Non-system runtime dependency or import check failed.' }
+          }
+      - name: Portable package (CI)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        shell: pwsh
+        run: ./tools/Package.ps1
+      - uses: actions/upload-artifact@v4
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        with:
+          name: DesktopPet-windows-x64
+          path: dist/DesktopPet-windows-x64.zip
+      - name: Signed release package
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: ./tools/Package.ps1 -Sign -Tag $env:GITHUB_REF_NAME
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: signed-release
+          path: dist/*
+  release:
+    if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
+    needs: build
+    runs-on: windows-2022
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed-release
+          path: dist
+      - name: Publish stable release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:GITHUB_REF_NAME dist/DesktopPet-windows-x64.zip dist/SHA256SUMS.txt dist/update.json dist/update.sig --repo '${{ github.repository }}' --title "DesktopPet $env:GITHUB_REF_NAME" --generate-notes --latest
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

@@ -1,0 +1,76 @@
+# DesktopPet 1.0.0
+
+Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲，沒有帳號、遙測、廣告或常駐服務。除了可選的 GitHub 更新，不使用網路。授權條款尚未指定；本專案不替作者選定正式授權。
+
+## 功能
+
+- 橘貓、三花、白貓、黑貓、虎斑；赤柴、黑柴、白柴、柯基、米色垂耳犬。同時一隻，可命名、切換。
+- 原創 48×48 像素圖，最近鄰縮放；共用調色盤、呼吸、眨眼、尾巴與動作。貓狗有不同剪影。素材來源為 `src/sprite.h`，無外部圖片。
+- 待機、睡眠呼吸、睡醒、哈欠、伸展、翻肚、開心、害羞、生氣、驚訝、撫摸愛心、拖曳伸縮、彈簧回彈及提醒跳躍。
+- 繁體中文離線對話、倒數、循環提醒、單次／每日／指定星期鬧鐘，自訂提醒與延後。只維持一個計時任務。
+- 透明無邊框、不占工作列、系統匣、大小 50～300%、透明度 20～100%、置頂、穿透、隱藏、全螢幕自動隱藏、每螢幕 DPI。
+- 原子 JSON 設定，優先可攜資料夾、不能寫入時改用 `%LOCALAPPDATA%\DesktopPet\config.json`。正常結束停止任務；更新重啟恢復任務。
+- WinHTTP 背景檢查、ECDSA P-256 簽章、SHA-256、嚴格 ZIP 白名單、備份及啟動失敗回復。未設定儲存庫或公開金鑰時停用更新。
+
+## 下載與執行
+
+從你部署的 GitHub Releases 下載 `DesktopPet-windows-x64.zip`，完整解壓到可寫入的資料夾，執行 `DesktopPet.exe`。不要只取出 EXE；保留 `Updater.exe` 與 `data/dialogue.json`。無需安裝或管理員權限，MSVC Runtime 靜態連結。
+
+**此原始碼交付尚未附 Windows EXE。** 本次環境無 MSVC、Windows SDK 與 Windows 桌面，Windows Release 建置須由下方本機指令或 GitHub Actions 執行；其結果不能視為已通過。詳見 [驗證紀錄](docs/TESTING.md)。
+
+## 操作
+
+| 操作 | 效果 |
+|---|---|
+| 左鍵點一下 | 隨機動作、4 秒對話；睡眠時叫醒 |
+| 快速連點四下 | 鬧脾氣 |
+| 游標來回移動 | 五次方向變化觸發撫摸愛心 |
+| 按住拖曳、放手 | 隨速度與方向伸縮，彈簧阻尼回彈 |
+| 提醒時點寵物或氣泡 | 確認提醒 |
+| 右鍵寵物、系統匣圖示 | 完整選單、計時狀態、設定、更新、結束 |
+| 系統匣 → 滑鼠穿透 | 解除穿透；透明像素本來就不攔截滑鼠 |
+| 關閉寵物視窗（Alt+F4） | 隱藏，計時仍繼續；選單「結束程式」才退出 |
+
+鬧鐘星期以「日一二三四五六」輸入，例如「一三五」。倒數及循環的輸入上限為七天。循環延後不改變原週期；睡眠錯過多個週期只通知一次。提醒不搶焦點，跳躍後氣泡保留到確認。隱藏時可由系統匣查看全文、確認或延後。
+
+預設橘貓「小橘」、96×96 邏輯像素、主螢幕工作區右下、完全不透明、置頂、全螢幕隱藏、自動檢查更新開啟；穿透及開機啟動關閉。五分鐘未互動睡眠，循環 30 分鐘、預設延後 5 分鐘，計時器未啟動。
+
+## 原始碼編譯
+
+安裝 Visual Studio 2022 的「使用 C++ 的桌面開發」、Windows 11 SDK、CMake 3.21 以上。使用 Developer PowerShell：
+
+```powershell
+cmake -S . -B build -A x64
+cmake --build build --config Release --parallel
+ctest --test-dir build -C Release --output-on-failure
+pwsh -File tools/Package.ps1
+```
+
+輸出 `dist/DesktopPet-windows-x64.zip`；`/MT` 不依賴額外安裝 VC Runtime。CI 另檢查 EXE 匯入表與封裝格式，正式發布要求簽章。這不取代乾淨 Windows 電腦上的執行驗證。
+
+Linux 僅測試可攜核心：
+
+```sh
+g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Isrc tests/core_tests.cpp -o core_tests
+./core_tests
+```
+
+可用 `tools/export_assets.cpp` 重建原創 PNG 圖集與 ICO，僅開發時需要編譯此工具；程式執行與發布不需要 Python 或其他 Runtime。圖集五欄為毛色，十四列依 `Action` 列舉；實際動畫由原生程式連續計算。
+
+## GitHub Repository、金鑰與發布
+
+設定集中於 CMake：`DESKTOPPET_OWNER`、`DESKTOPPET_REPOSITORY`、`DESKTOPPET_PUBLIC_KEY`。CI 從目前儲存庫取得前兩者，從 Repository Variable 取得公開金鑰。
+
+第一次發布先建立 ECDSA P-256 簽署金鑰，將公開點設定為 Repository Variable `DESKTOPPET_PUBLIC_KEY`、私鑰內容設定為 Secret `UPDATE_SIGNING_KEY`。**私鑰不得進入 Git。** 詳細指令、本地測試與後續版本步驟請見 [發布文件](docs/RELEASE.md)。
+
+Tag `vX.Y.Z` 必須與 CMake 版本相同；CI 建置、測試、打包、驗證簽章，再建立正式 Release。沒有正確簽署設定時會失敗，不會發布未簽署更新。一般 Push／PR 只產生未簽署的人工下載測試包，客戶端不接受它作為更新。
+
+## 已知限制與待驗證
+
+- Windows Release、GUI、跨螢幕 DPI、睡眠喚醒、開機啟動、更新回復與實際資源使用，均需 Windows 實測。尚不宣稱達成 30 MB／1% CPU 目標。
+- 全螢幕判斷使用前景視窗是否覆蓋所在螢幕；工作列與桌面排除，採一秒檢查。偽裝為全螢幕的無邊框視窗也會隱藏寵物。
+- 更新僅支援本工具產生的未壓縮 STORE ZIP，以及五個明確允許的發布檔；這用來限制解壓風險。設定檔永不加入更新包。
+- 安裝目錄不可寫、含 reparse point／符號連結，或檔案被安全軟體鎖定時，更新會拒絕或回復；不要求提升權限。
+- 更新健康檢查為初始化完成事件加三秒存活檢查，無法判斷啟動後很久才發生的故障。自動更新不提供可信根金鑰輪替，需人工部署新可信金鑰版本。
+- 突然斷電後以交易日誌回復，仍需磁碟及舊版備份完整；詳細中斷測試尚待實機驗證。
+- 程式正常退出後不會在背景提醒；手動隱藏／關閉寵物視窗不等於退出。
