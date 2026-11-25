@@ -1,0 +1,94 @@
+#include "core.h"
+#include "sprite.h"
+#include "zip.h"
+#include <iostream>
+#include <set>
+#include <random>
+#include <functional>
+using namespace pet;
+static int checks=0;
+static void check(bool ok,const char*name){++checks;if(!ok)throw std::runtime_error(name);}
+static void rejects(const std::function<void()>&f,const char*name){bool rejected=false;try{f();}catch(...){rejected=true;}check(rejected,name);}
+static void p16(std::vector<unsigned char>&b,unsigned v){b.push_back(v&255);b.push_back((v>>8)&255);}
+static void p32(std::vector<unsigned char>&b,uint32_t v){p16(b,v&65535);p16(b,v>>16);}
+static std::vector<unsigned char> zip(const std::vector<std::string>&names){std::vector<unsigned char>b,cd;for(auto&name:names){auto offset=b.size();std::string data="pet: "+name;auto crc=crc32(reinterpret_cast<const unsigned char*>(data.data()),data.size());p32(b,0x04034b50);p16(b,20);p16(b,0);p16(b,0);p32(b,0);p32(b,crc);p32(b,uint32_t(data.size()));p32(b,uint32_t(data.size()));p16(b,unsigned(name.size()));p16(b,0);b.insert(b.end(),name.begin(),name.end());b.insert(b.end(),data.begin(),data.end());p32(cd,0x02014b50);p16(cd,20);p16(cd,20);p16(cd,0);p16(cd,0);p32(cd,0);p32(cd,crc);p32(cd,uint32_t(data.size()));p32(cd,uint32_t(data.size()));p16(cd,unsigned(name.size()));p16(cd,0);p16(cd,0);p16(cd,0);p16(cd,0);p32(cd,0);p32(cd,uint32_t(offset));cd.insert(cd.end(),name.begin(),name.end());}auto offset=b.size();b.insert(b.end(),cd.begin(),cd.end());p32(b,0x06054b50);p16(b,0);p16(b,0);p16(b,unsigned(names.size()));p16(b,unsigned(names.size()));p32(b,uint32_t(cd.size()));p32(b,uint32_t(offset));p16(b,0);return b;}
+// All clocks below are simulated seconds; no sleeps or real-time waits.
+static void timerRegressions(){
+ for(auto mode:{Mode::Countdown,Mode::Interval,Mode::Alarm}){
+  for(int minutes:{5,10,15,17}){
+   Timer t;t.mode=mode;t.interval=1800;t.repeat=0;
+   t.start(1000);const Seconds first=t.due;
+   check(t.tick(first)&&t.pending,"initial reminder");
+   const Seconds phase=t.due;t.defer(first,minutes);
+   const Seconds deadline=first+minutes*60;
+   check(!t.pending&&t.running&&t.snooze==deadline,"defer clears pending and schedules chosen duration");
+   check(!t.tick(deadline-1)&&!t.pending,"snooze never early");
+   check(t.tick(deadline)&&t.pending&&!t.snooze,"snooze delivered exactly at deadline");
+   check(!t.tick(deadline),"no duplicate at same timestamp");
+   if(mode==Mode::Interval)check(t.due==phase,"defer retains interval phase");
+   t.acknowledge();check(!t.pending,"deferred reminder can be acknowledged");
+   t.defer(deadline,minutes);check(!t.pending&&t.tick(deadline+minutes*60),"reminder can be deferred again");
+  }
+ }
+ // Interval rounds inside a snooze window merge into that one deferred reminder.
+ Timer t;t.mode=Mode::Interval;t.interval=60;t.start(1000);check(t.tick(1060),"short interval initial reminder");
+ t.defer(1060,5);check(!t.tick(1120)&&t.due==1180&&!t.pending,"next round cannot interrupt snooze");
+ check(!t.tick(1300)&&t.due==1360,"multiple covered rounds advance silently");
+ check(t.tick(1360)&&t.due==1420&&!t.snooze,"coincident snooze and round fire once");
+ check(!t.tick(1360),"coincident timestamp not repeated");t.acknowledge();check(t.tick(1420),"next original round retained");
+ t.defer(1420,5);check(t.tick(5000)&&t.due==5020&&!t.snooze,"wake after overlapping deadlines coalesces once");
+ check(!t.tick(5000),"wake does not replay overdue rounds");
+ t.stop();t.interval=180;t.start(1000);check(t.tick(1180),"offset interval first round");
+ t.defer(1180,5);check(!t.tick(1360)&&t.due==1540,"round before nonaligned snooze is merged");
+ check(t.tick(1480)&&t.due==1540,"nonaligned snooze deadline delivered");
+ t.acknowledge();check(t.tick(1540),"round after snooze not lost or phase shifted");
+ // Pausing a deferred single task must not resurrect its consumed due timestamp.
+ for(auto mode:{Mode::Countdown,Mode::Alarm}){
+  Timer single;single.mode=mode;single.interval=10;single.start(1000);auto first=single.due;
+  check(single.tick(first)&&single.due==0,"single task original deadline consumed");single.defer(first,5);
+  single.pause(first+30);check(!single.tick(first+10000),"deferred task stays paused");
+  single.resume(first+1000);check(single.due==0&&!single.tick(first+1000),"resume does not resurrect original deadline");
+  check(!single.tick(first+1269)&&single.tick(first+1270),"paused snooze keeps remaining duration");
+ }
+ // Repeating alarms also merge overlapping scheduled and deferred deadlines.
+ for(int repeat:{1,2}){
+  Timer alarm;alarm.mode=Mode::Alarm;alarm.alarmHour=9;alarm.alarmMinute=0;alarm.repeat=repeat;alarm.weekdays=127;
+  std::tm tm{};tm.tm_year=126;tm.tm_mon=0;tm.tm_mday=5;tm.tm_hour=8;tm.tm_isdst=-1;
+  auto clock=Seconds(std::mktime(&tm));alarm.start(clock);auto first=alarm.due;check(alarm.tick(first),"repeating alarm first reminder");
+  auto next=alarm.due;alarm.defer(first+60,1440);check(!alarm.tick(next)&&!alarm.pending,"alarm round during snooze coalesces");
+  auto snooze=alarm.snooze;check(alarm.tick(snooze)&&!alarm.snooze&&alarm.due>snooze,"daily or weekday alarm deferred delivery");
+ }
+ // Existing JSON fields suffice for update/restart recovery during a snooze.
+ t.mode=Mode::Interval;t.interval=60;t.start(1000);t.tick(1060);t.defer(1060,10);
+ Timer restored;restored.load(Json::parse(t.json().dump()),true);
+ check(!restored.tick(1600)&&restored.tick(1660)&&restored.due==1720,"restore keeps snooze and original phase");
+ auto legacyOverlap=t.json();legacyOverlap["pending"]=true;restored.load(legacyOverlap,true);
+ check(!restored.pending&&!restored.tick(1600)&&restored.tick(1660),"legacy overlap pending merges into existing snooze");
+ restored.stop();check(!restored.tick(9999),"stop cancels deferred reminder");
+ // UI and core share the same interval bound; other modes keep seven days.
+ check(Timer::maxInterval(Mode::Interval)==86400&&Timer::maxInterval(Mode::Countdown)==604800,"mode-specific limits");
+ for(int duration:{0,1,86399,86400,86401,86460,90000,604800}){
+  Timer interval;interval.mode=Mode::Interval;interval.interval=duration;
+  check(interval.validInterval()==(duration>=1&&duration<=86400),"interval validity boundary");
+  interval.start(1000);check(interval.interval==std::clamp(duration,1,86400),"start clamps invalid core interval");
+  Timer loaded;loaded.load(interval.json(),false);check(loaded.interval==interval.interval,"valid interval roundtrip");
+ }
+ Json legacy;legacy["mode"]=int(Mode::Interval);legacy["interval"]=604800;legacy["running"]=true;legacy["due"]=605800;legacy["remaining"]=604700;
+ Timer migrated;migrated.load(legacy,true);check(migrated.interval==86400&&migrated.due==87400&&migrated.remaining==86400,"legacy interval and active phase normalized");
+ legacy["mode"]=int(Mode::Countdown);migrated=Timer{};migrated.load(legacy,true);check(migrated.interval==604800&&migrated.due==605800,"countdown legacy limit unchanged");
+ legacy["mode"]=int(Mode::Alarm);migrated=Timer{};migrated.load(legacy,true);check(migrated.interval==604800,"alarm configuration limit unchanged");
+}
+int main(){try{
+ timerRegressions();
+ auto j=Json::parse("{\"text\":\"繁體中文\\n\\uD83D\\uDC31\",\"n\":-1.25e2,\"b\":true,\"a\":[null,2]}");check(j["n"].num()==-125,"json number");check(Json::parse(j.dump()).dump()==j.dump(),"json roundtrip");check(j["missing"].str("fallback")=="fallback","missing default");
+ for(auto s:{"", "01","1.","1e", "NaN","1e999", "[1,]", "{\"a\":1,\"a\":2}","\"\\uD800\"", "true false", "\"x\n\""})rejects([&]{Json::parse(s);},"strict JSON rejection");
+ rejects([]{Json::parse(std::string(40,'[')+std::string(40,']'));},"JSON nesting bound");rejects([]{Json::parse(std::string(1024*1024+1,' '));},"JSON size bound");
+ rejects([]{Json::parse(std::string("\"\xc0\xaf\""));},"invalid raw UTF8 rejected");check(clipUtf8("小橘",4)=="小","UTF8 safe truncation");
+ Config c;check(c.pet==0&&c.coat==0&&c.name=="小橘"&&!c.timer.running,"defaults");Json bad;bad["scale"]=1e20;bad["opacity"]=-1;bad["timer"]["interval"]=0;bad["timer"]["running"]=true;c.load(bad,false);check(c.scale==300&&c.opacity==20&&c.timer.interval==1&&!c.timer.running,"config clamp and normal launch stops task");c.timer.interval=300;c.timer.start(1000);c.timer.pending=true;Config r;r.load(Json::parse(c.json().dump()),true);check(r.timer.running&&r.timer.pending&&r.timer.due==1300,"cross-update state roundtrip");Json future;future["schema"]=99;Config untouched;untouched.load(future,true);check(untouched.name=="小橘","future schema safe default");
+ Timer t;t.interval=60;t.start(1000);check(!t.tick(1059),"countdown before deadline");check(t.tick(1060)&&t.pending&&t.due==0,"countdown at deadline");check(!t.tick(2000)&&!t.running,"single task completes and stops");t.acknowledge();check(!t.pending,"acknowledge");t.start(1000);t.pause(1020);check(!t.tick(9999)&&t.remaining==40,"pause");t.resume(2000);check(t.due==2040&&t.tick(2040),"resume");t.defer(2040,5);check(!t.tick(2339)&&t.tick(2340),"snooze countdown");
+ t.mode=Mode::Interval;t.interval=1800;t.start(1000);check(t.tick(10000)&&t.due==11800,"sleep catchup retains phase");check(!t.tick(10001),"no catchup storm");auto phase=t.due;t.defer(10001,5);check(t.tick(10301)&&t.due==phase,"snooze preserves interval");t.stop();check(!t.running&&!t.pending&&!t.snooze,"stop clears state");
+ auto base=local(now());base.tm_hour=8;base.tm_min=0;base.tm_sec=0;base.tm_isdst=-1;auto morning=Seconds(std::mktime(&base));t.mode=Mode::Alarm;t.alarmHour=9;t.alarmMinute=30;t.repeat=0;t.start(morning);check(local(t.due).tm_hour==9&&local(t.due).tm_min==30&&t.due>morning,"local one-shot alarm");check(t.tick(t.due)&&!t.due,"single alarm only once");t.repeat=1;t.start(morning);auto first=t.due;check(t.tick(first+3*86400)&&t.due>first+3*86400,"daily sleep correction");t.repeat=2;t.weekdays=1<<1;t.start(morning);check(local(t.due).tm_wday==1,"specified weekday");
+ check(Version::parse("v1.2.3").has_value(),"release tag");check(*Version::parse("1.9.9")<*Version::parse("1.10.0"),"numeric semver");for(auto s:{"1.0.0-beta","1.0.0+meta","01.0.0","1.0","1.0.0.1","-1.0.0","1.0.1000001"})check(!Version::parse(s),"reject non-stable version");
+ Sprite sp;std::set<uint32_t> identities;for(int pet=0;pet<2;++pet)for(int coat=0;coat<5;++coat){sp.make(pet,coat,Action::Idle,0);identities.insert(crc32(reinterpret_cast<unsigned char*>(sp.pixels.data()),sp.pixels.size()*4));for(int a=0;a<=int(Action::Remind);++a){sp.make(pet,coat,Action(a),1.3);int opaque=0;for(auto p:sp.pixels){check(p==0||(p>>24)==255,"sprite alpha");if(p)++opaque;}check(opaque>200&&opaque<1800,"visible pixel sprite");}}check(identities.size()==10,"ten distinct coats");sp.make(0,0,Action::Idle,0);auto cat=sp.pixels;sp.make(1,0,Action::Idle,0);int silhouettes=0;for(size_t i=0;i<cat.size();++i)if(bool(cat[i])!=bool(sp.pixels[i]))++silhouettes;check(silhouettes>15,"different silhouettes");Spring spring;spring.drag(120,-90);for(int i=0;i<500;++i)spring.step(.016);check(!spring.moving()&&std::abs(spring.x-1)<.001,"spring settles");
+ std::vector<std::string> names={"DesktopPet.exe","Updater.exe","data/dialogue.json","README.md","CHANGELOG.md"};auto b=zip(names);check(inspectZip(b).size()==5,"safe ZIP");auto corrupt=b;corrupt[50]^=1;rejects([&]{inspectZip(corrupt);},"ZIP corruption");for(auto path:{"../config.json","C:/evil.exe","data/../../evil","config.json","Data/dialogue.json","data\\dialogue.json","//server/file","data/dialogue.json:evil"}){auto n=names;n[2]=path;rejects([&]{inspectZip(zip(n));},"unsafe ZIP path");}auto duplicate=names;duplicate[1]=duplicate[0];rejects([&]{inspectZip(zip(duplicate));},"duplicate ZIP");for(size_t n=0;n<b.size();++n){auto cut=std::vector<unsigned char>(b.begin(),b.begin()+n);rejects([&]{inspectZip(cut);},"ZIP truncation");}auto symlink=b;size_t cd=0;for(size_t n=0;n+4<b.size();++n)if(b[n]==0x50&&b[n+1]==0x4b&&b[n+2]==1&&b[n+3]==2){cd=n;break;}symlink[cd+41]=0xa0;rejects([&]{inspectZip(symlink);},"ZIP symlink");std::mt19937 rng(7);for(int i=0;i<2000;++i){std::string input;for(unsigned n=rng()%90;n;--n)input+=char(rng()%128);try{Json::parse(input);}catch(const std::runtime_error&){} }for(int i=0;i<2000;++i){auto mutated=b;mutated[rng()%mutated.size()]^=static_cast<unsigned char>(1u<<(rng()%8));try{inspectZip(mutated);}catch(const std::runtime_error&){} }check(crc32(reinterpret_cast<const unsigned char*>("123456789"),9)==0xcbf43926,"CRC vector");std::cout<<"PASS: "<<checks<<" checks; JSON/config/timers/alarm/semver/sprites/spring/ZIP\n";return 0;
+ }catch(const std::exception&e){std::cerr<<"FAIL: "<<e.what()<<" after "<<checks<<" checks\n";return 1;}}
