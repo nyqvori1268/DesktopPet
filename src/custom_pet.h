@@ -9,7 +9,7 @@ class CustomPet {
  std::array<ImageClip,7> clips;
  int active=-1;uint64_t started=0;
 public:
- bool load(const Config&config,std::string*failure=nullptr);
+ bool load(const Json&files,std::string*failure=nullptr);
  void set(int state,ImageClip clip){clips.at(size_t(state))=std::move(clip);active=-1;}
  bool ready()const{return !clips[0].frames.empty();}
  unsigned duration(Action action,unsigned fallback)const{const auto&c=clips[size_t(customState(action))];if(c.frames.size()<2)return fallback;uint64_t total=0;for(auto&f:c.frames)total+=f.delay;return unsigned(std::min<uint64_t>(10000,std::max<uint64_t>(fallback,total)));}

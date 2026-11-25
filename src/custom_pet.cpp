@@ -36,8 +36,8 @@ ImageClip decodeCustom(const fs::path&file){
  }
  return trimClip(std::move(result));
 }
-bool CustomPet::load(const Config&config,std::string*failure){
- for(size_t i=0;i<clips.size();++i){clips[i]=ImageClip{};auto name=config.customFiles[customStates[i]].str();if(!customFileName(name))continue;try{auto file=customDirectory()/wide(name);rejectReparse(file);clips[i]=decodeCustom(file);}catch(const std::exception&e){if(failure)*failure=e.what();}}
+bool CustomPet::load(const Json&files,std::string*failure){
+ for(size_t i=0;i<clips.size();++i){clips[i]=ImageClip{};auto name=files[customStates[i]].str();if(!customFileName(name))continue;try{auto file=customDirectory()/wide(name);rejectReparse(file);clips[i]=decodeCustom(file);}catch(const std::exception&e){if(failure)*failure=e.what();}}
  active=-1;return ready();
 }
 }

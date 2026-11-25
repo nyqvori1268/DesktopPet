@@ -11,7 +11,62 @@ struct Sprite{
  void box(int x,int y,int w,int h,uint32_t c){for(int j=y;j<y+h;++j)for(int i=x;i<x+w;++i)dot(i,j,c);}
  void oval(int x,int y,int w,int h,uint32_t c){for(int j=0;j<h;++j)for(int i=0;i<w;++i){double a=(i+.5-w/2.)/(w/2.),b=(j+.5-h/2.)/(h/2.);if(a*a+b*b<=1)dot(x+i,y+j,c);}}
  void heart(int x,int y){box(x,y,2,2,0xffef88a4);box(x+3,y,2,2,0xffef88a4);box(x,y+2,5,2,0xffef88a4);box(x+1,y+4,3,1,0xffef88a4);dot(x+2,y+5,0xffef88a4);}
+ void extraEmote(Action action,double t){
+  if(action==Action::Pet||action==Action::Happy||action==Action::Shy){heart(3,3-int(std::sin(t*3)*2));heart(39,4);}
+  if(action==Action::Sleep){box(36,4,6,1,0xffffefd9);box(40,5,1,1,0xffffefd9);box(38,6,2,1,0xffffefd9);box(36,7,1,1,0xffffefd9);box(36,8,6,1,0xffffefd9);}
+  if(action==Action::Surprise||action==Action::Wake){box(42,10,2,5,0xffeaa3b3);box(42,17,2,2,0xffeaa3b3);}
+ }
+ void bird(int coat,Action action,double t){
+  pixels.fill(0);coat=std::clamp(coat,0,4);bool crest=coat>=3,sleep=action==Action::Sleep;
+  const uint32_t outline=0xff534954,ink=0xff423d4b,beak=0xffe7bb74;
+  const uint32_t colors[]={0xffa6c586,0xff99c5db,0xffead88f,0xffa8a7ae,0xffeee0af};
+  const uint32_t wings[]={0xff83a877,0xff78a5bf,0xffd0bc76,0xff85838f,0xffcfc492};
+  uint32_t fur=colors[coat],wing=wings[coat];int breath=int(std::sin(t*(sleep?1.6:2.5))>.6);
+  bool flap=action==Action::Happy||action==Action::Pet||action==Action::Stretch||action==Action::Remind;
+  int spread=flap?2+int((std::sin(t*8)+1)*2):0;
+  // Long tail feathers, two wings and a hooked beak distinguish every bird.
+  box(21,33,4,13,outline);box(22,34,2,12,wing);box(26,33,3,12,outline);box(26,34,2,10,fur);
+  oval(13,22-breath,22,21+breath,outline);oval(14,23-breath,20,19+breath,fur);
+  oval(10-spread,25-spread,9+spread,13,outline);oval(11-spread,26-spread,7+spread,11,wing);
+  oval(30,25-spread,8+spread,13,outline);oval(31,26-spread,6+spread,11,wing);
+  box(12-spread,30-spread,5,1,outline);box(13-spread,33-spread,5,1,outline);box(32,30-spread,5,1,outline);
+  int tilt=(action==Action::Shy||action==Action::Happy)?int(std::sin(t*3)*2):0;
+  int hy=(sleep?17:10)-breath,hx=12+tilt;
+  if(crest){box(hx+9,hy-7,2,9,outline);box(hx+12,hy-9,2,10,outline);box(hx+15,hy-6,2,7,outline);box(hx+10,hy-6,1,7,beak);}
+  oval(hx,hy,25,23,outline);oval(hx+1,hy+1,23,21,crest?(coat==3?0xffe6dfad:0xfff5e7b6):(coat==1?0xffeeeadd:0xffefe1a1));
+  if(!crest){box(hx+4,hy+3,5,1,wing);box(hx+15,hy+3,5,1,wing);box(hx+2,hy+6,4,1,wing);box(hx+19,hy+6,4,1,wing);}
+  bool shut=sleep||action==Action::Blink||action==Action::Pet;
+  if(shut){box(hx+5,hy+10,4,1,ink);box(hx+16,hy+10,4,1,ink);}
+  else{box(hx+6,hy+9,2,4,ink);box(hx+17,hy+9,2,4,ink);dot(hx+6,hy+9,0xffffefd9);dot(hx+17,hy+9,0xffffefd9);}
+  if(action==Action::Angry){box(hx+4,hy+7,4,1,ink);dot(hx+8,hy+8,ink);box(hx+17,hy+7,4,1,ink);dot(hx+16,hy+8,ink);}
+  oval(hx+10,hy+12,6,5,outline);box(hx+11,hy+12,4,3,beak);box(hx+12,hy+15,2,3,beak);
+  if(crest){oval(hx+2,hy+14,6,4,0xffe7a079);oval(hx+18,hy+14,6,4,0xffe7a079);}
+  else {box(hx+3,hy+15,3,2,0xff8c9bc5);box(hx+20,hy+15,3,2,0xff8c9bc5);}
+  box(16,41,2,4,beak);box(29,41,2,4,beak);box(14,44,7,1,outline);box(27,44,7,1,outline);
+  extraEmote(action,t);
+ }
+ void panda(Action action,double t){
+  pixels.fill(0);const uint32_t outline=0xff534954,black=0xff625e68,white=0xfff4eee3,ink=0xff423d4b;
+  bool sleep=action==Action::Sleep;int breath=int(std::sin(t*(sleep?1.5:2.5))>.6);bool belly=action==Action::Belly;
+  oval(10,24-breath,29,21+breath,outline);oval(11,25-breath,27,19+breath,white);
+  oval(7,30,10,12,black);oval(32,30,10,12,black);oval(12,39,10,7,black);oval(28,39,10,7,black);
+  if(belly){oval(11,22,27,23,white);oval(10,24,8,7,black);oval(32,24,8,7,black);oval(15,32,18,11,0xffe9dece);}
+  if(action==Action::Stretch){oval(3,35,16,7,black);oval(30,35,15,7,black);}
+  int hy=(sleep?17:11)-breath;
+  oval(9,hy-5,10,10,outline);oval(10,hy-4,8,8,black);oval(30,hy-5,10,10,outline);oval(31,hy-4,8,8,black);
+  oval(8,hy,33,26,outline);oval(9,hy+1,31,24,white);oval(13,hy+8,9,11,black);oval(27,hy+8,9,11,black);
+  bool shut=sleep||action==Action::Blink||action==Action::Pet;
+  if(shut){box(15,hy+12,5,1,white);box(29,hy+12,5,1,white);}
+  else{box(17,hy+11,2,4,white);box(30,hy+11,2,4,white);dot(17,hy+13,ink);dot(30,hy+13,ink);}
+  if(action==Action::Angry){box(14,hy+9,5,1,ink);box(30,hy+9,5,1,ink);}
+  oval(22,hy+17,5,3,ink);dot(24,hy+20,ink);box(22,hy+21,5,1,ink);
+  if(action==Action::Yawn)oval(22,hy+19,5,5,ink);
+  if(action==Action::Happy||action==Action::Pet){box(34,24,3,20,0xff98b77d);box(34,28,3,1,outline);box(34,36,3,1,outline);oval(37,25,8,4,0xffa9c58a);oval(28,31,8,4,0xffa9c58a);oval(30,35,8,6,black);}
+  if(action==Action::Shy){box(12,hy+18,5,2,0xffeaa3b3);box(32,hy+18,5,2,0xffeaa3b3);}
+  extraEmote(action,t);
+ }
  void make(int species,int coat,Action action,double t){
+  if(species==3){bird(coat,action,t);return;}if(species==4){panda(action,t);return;}
   pixels.fill(0);const uint32_t outline=0xff534954,cream=0xffffefd9,ink=0xff423d4b,pink=0xffeaa3b3;
   static constexpr uint32_t cat[]={0xffe9ad70,0xfffaf0de,0xfff3eee8,0xff696574,0xffaa9c91};
   static constexpr uint32_t dog[]={0xffdca06c,0xff686574,0xffeee9df,0xffdaa477,0xffd9c3a0};

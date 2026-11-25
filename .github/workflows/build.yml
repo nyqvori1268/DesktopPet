@@ -12,13 +12,15 @@ jobs:
     runs-on: windows-2022
     env:
       DESKTOPPET_PUBLIC_KEY: ${{ vars.DESKTOPPET_PUBLIC_KEY }}
+      DESKTOPPET_BACKUP_PUBLIC_KEY: ${{ vars.DESKTOPPET_BACKUP_PUBLIC_KEY }}
+      UPDATE_SIGNING_PUBLIC_KEY: ${{ vars.UPDATE_SIGNING_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure x64 / static runtime
         shell: pwsh
         run: |
           $owner, $repo = '${{ github.repository }}'.Split('/')
-          cmake -S . -B build -A x64 "-DDESKTOPPET_OWNER=$owner" "-DDESKTOPPET_REPOSITORY=$repo" "-DDESKTOPPET_PUBLIC_KEY=$env:DESKTOPPET_PUBLIC_KEY"
+          cmake -S . -B build -A x64 "-DDESKTOPPET_OWNER=$owner" "-DDESKTOPPET_REPOSITORY=$repo" "-DDESKTOPPET_PUBLIC_KEY=$env:DESKTOPPET_PUBLIC_KEY" "-DDESKTOPPET_BACKUP_PUBLIC_KEY=$env:DESKTOPPET_BACKUP_PUBLIC_KEY"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Build Release
         run: cmake --build build --config Release --parallel

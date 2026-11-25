@@ -21,6 +21,7 @@ std::wstring quote(const std::wstring&s);
 PROCESS_INFORMATION launch(const fs::path&exe,const std::vector<std::wstring>&args);
 std::string randomId();
 std::string sha256(const std::vector<unsigned char>&data);
+bool publicKeyValid(const std::string&point);
 bool verifySignature(const std::vector<unsigned char>&message,const std::vector<unsigned char>&sig,const std::string&publicKey);
 bool signatureOK(const std::vector<unsigned char>&message,const std::vector<unsigned char>&sig);
 void rejectReparse(const fs::path&p);

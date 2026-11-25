@@ -1,5 +1,6 @@
 #include "platform.h"
 #include "build_config.h"
+#include "trust_store.h"
 #include <bcrypt.h>
 #include <fstream>
 #include <memory>
@@ -21,6 +22,10 @@ void setStartup(bool enabled){HKEY key=nullptr;if(RegCreateKeyExW(HKEY_CURRENT_U
 static std::vector<unsigned char> unhex(const std::string&s){if(s.size()%2)throw std::runtime_error("hex");std::vector<unsigned char> b;for(size_t i=0;i<s.size();i+=2){auto digit=[](char c)->int{if(c>='0'&&c<='9')return c-'0';if(c>='a'&&c<='f')return c-'a'+10;if(c>='A'&&c<='F')return c-'A'+10;throw std::runtime_error("hex");};b.push_back(static_cast<unsigned char>(digit(s[i])*16+digit(s[i+1])));}return b;}
 static std::vector<unsigned char> hash(const std::vector<unsigned char>&data){BCRYPT_ALG_HANDLE alg=nullptr;BCRYPT_HASH_HANDLE h=nullptr;std::vector<unsigned char> result(32);if(BCryptOpenAlgorithmProvider(&alg,BCRYPT_SHA256_ALGORITHM,nullptr,0)<0)throw std::runtime_error("SHA256 provider");NTSTATUS s=BCryptCreateHash(alg,&h,nullptr,0,nullptr,0,0);if(s>=0)s=BCryptHashData(h,const_cast<PUCHAR>(data.data()),ULONG(data.size()),0);if(s>=0)s=BCryptFinishHash(h,result.data(),32,0);if(h)BCryptDestroyHash(h);BCryptCloseAlgorithmProvider(alg,0);if(s<0)throw std::runtime_error("SHA256 failed");return result;}
 std::string sha256(const std::vector<unsigned char>&data){auto b=hash(data);const char*h="0123456789abcdef";std::string s;for(auto c:b){s+=h[c>>4];s+=h[c&15];}return s;}
+bool publicKeyValid(const std::string&point){
+ if(point.size()!=128)return false;std::vector<unsigned char> key;try{key=unhex(point);}catch(...){return false;}
+ BCRYPT_ECCKEY_BLOB header{BCRYPT_ECDSA_PUBLIC_P256_MAGIC,32};std::vector<unsigned char>blob(sizeof(header)+key.size());memcpy(blob.data(),&header,sizeof(header));memcpy(blob.data()+sizeof(header),key.data(),key.size());BCRYPT_ALG_HANDLE alg=nullptr;BCRYPT_KEY_HANDLE handle=nullptr;if(BCryptOpenAlgorithmProvider(&alg,BCRYPT_ECDSA_P256_ALGORITHM,nullptr,0)<0)return false;auto status=BCryptImportKeyPair(alg,nullptr,BCRYPT_ECCPUBLIC_BLOB,&handle,blob.data(),ULONG(blob.size()),0);if(handle)BCryptDestroyKey(handle);BCryptCloseAlgorithmProvider(alg,0);return status>=0;
+}
 bool verifySignature(const std::vector<unsigned char>&message,const std::vector<unsigned char>&sig,const std::string&publicKey){if(publicKey.size()!=128||sig.size()!=64)return false;auto key=unhex(publicKey);BCRYPT_ECCKEY_BLOB header{BCRYPT_ECDSA_PUBLIC_P256_MAGIC,32};std::vector<unsigned char> blob(sizeof(header)+key.size());memcpy(blob.data(),&header,sizeof(header));memcpy(blob.data()+sizeof(header),key.data(),key.size());BCRYPT_ALG_HANDLE a=nullptr;BCRYPT_KEY_HANDLE k=nullptr;if(BCryptOpenAlgorithmProvider(&a,BCRYPT_ECDSA_P256_ALGORITHM,nullptr,0)<0)return false;NTSTATUS s=BCryptImportKeyPair(a,nullptr,BCRYPT_ECCPUBLIC_BLOB,&k,blob.data(),ULONG(blob.size()),0);auto digest=hash(message);if(s>=0)s=BCryptVerifySignature(k,nullptr,digest.data(),ULONG(digest.size()),const_cast<PUCHAR>(sig.data()),ULONG(sig.size()),0);if(k)BCryptDestroyKey(k);BCryptCloseAlgorithmProvider(a,0);return s>=0;}
-bool signatureOK(const std::vector<unsigned char>&message,const std::vector<unsigned char>&sig){return verifySignature(message,sig,PET_PUBLIC_KEY);}
+bool signatureOK(const std::vector<unsigned char>&message,const std::vector<unsigned char>&sig){return verifyTrustedManifest(message,sig);}
 }

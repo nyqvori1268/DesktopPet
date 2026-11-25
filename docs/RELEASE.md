@@ -1,5 +1,7 @@
 # 建置、簽署與發布
 
+v1.1.1 以上沿用既有正式金鑰，新增 [備援／輪替文件](UPDATE_KEYS.md) 與 [舊版安全手動遷移](MANUAL_MIGRATION.md)。下方「第一次發布」只適用尚無正式金鑰的新專案，升級時不要重新生成現有金鑰。
+
 ## 第一次發布
 
 1. 將此目錄作為 GitHub 儲存庫根目錄，保留 `.github/workflows/build.yml`。
@@ -61,22 +63,11 @@ ZIP 僅接受五個允許路徑：`DesktopPet.exe`、`Updater.exe`、`data/dialo
 
 `.desktoppet-transaction.json` 存在時，正常啟動會先使用暫存更新器執行回復。備份尚未完成的 backing 階段沒有修改程式檔，可安全清理；prepared／installed 階段回復備份。回復失敗會保留日誌及備份，請勿手動刪除。非交易期間清理超過七天的暫存下載與更新器副本。
 
-## 本地安全更新測試（不需要公開私鑰）
+## 本地安全更新測試
 
-- 產生獨立的本地測試金鑰；用它編譯 1.0.0 舊版與 1.0.1 新版。不要在正式客戶端放入測試私鑰。
-- 複製程式目錄作為沙盒，在舊版啟動計時。新版提高 CMake 版本、同步 `src/pet.rc`，執行 `Package.ps1 -Sign -Tag v1.0.1`。
-- 將新版 ZIP 改名 `package.zip`，與 `update.json`、`update.sig` 放進同一個 stage 目錄。先關閉沙盒舊程式，再從**另一個暫存目錄**複製並執行舊版 Updater.exe：
+請在獨立資料夾以測試用公開點與正式相同的簽署規格測試，不把測試金鑰放入正式客戶端。v1.1.1 已改成父程序繼承控制代碼握手，舊版手動傳 PID／0 的命令已移除，不得拿它略過身分驗證。
 
-```powershell
-# third argument 0 means no still-running parent to wait for (manual sandbox only).
-& C:/temp/updater-test/Updater.exe C:/temp/update-stage C:/temp/DesktopPet-sandbox 0
-```
-
-這仍須完整簽章、雜湊及版本驗證；不是略過驗證模式。計時恢復情境需由主程式正常「下載並安裝」測試；可在你自己的公開 GitHub 測試庫放入測試金鑰簽署的正式 Release，沙盒客戶端必須編入該庫及測試公開金鑰。
-
-- 篡改 ZIP、簽章及 manifest、舊版本／錯架構／minVersion 過高均應拒絕。
-- 在沙盒停用新版就緒回報或製造新版啟動失敗，確認備份回復；替換階段結束 Updater 後再開主程式，確認中斷回復。
-- 正式金鑰只用於正式 Release。沒有金鑰時可正常離線使用，但不能測試成功的自動更新。
+Windows CTest 加入實際 handle 繼承、程序身分、準備就緒／取消及更新器提前結束的測試。完整更新仍需在公開測試庫或你已簽署的沙盒版本測試：正常退出／慢關閉、下載取消、逾時、程序提前退出、簽章／雜湊錯誤、回滾、計時恢復。舊版遷移使用 [Manual-Migrate.ps1](MANUAL_MIGRATION.md) 並保留所有簽章驗證。
 
 ## 後續版本
 

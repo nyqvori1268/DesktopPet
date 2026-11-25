@@ -1,4 +1,6 @@
 #include "core.h"
+#include "update_logic.h"
+#include "trust_logic.h"
 #include "sprite.h"
 #include "zip.h"
 #include <iostream>
@@ -109,12 +111,50 @@ static void imageRegressions(){
  check(customFileName(std::string(64,'a')+".png")&&customFileName(std::string(64,'f')+".gif"),"content hash filenames allowed");
  for(auto name:{"../idle.png","C:/idle.gif","https://example.com/a.png","idle.png","a.png:evil"})check(!customFileName(name),"arbitrary paths rejected");
  check(customState(Action::Blink)==1&&customState(Action::Sleep)==2&&customState(Action::Happy)==3&&customState(Action::Angry)==4&&customState(Action::Pet)==5&&customState(Action::Remind)==6&&customState(Action::Drag)==0,"seven custom action slots");
- Config custom;custom.pet=2;custom.customName="小桃";custom.name=custom.customName;custom.builtinName="小橘";custom.customFiles["idle"]=std::string(64,'a')+".png";custom.timer.start(1000);
- Config restored;restored.load(Json::parse(custom.json().dump()),true);check(restored.pet==2&&restored.name=="小桃"&&restored.builtinName=="小橘"&&restored.customFiles["idle"].str()==custom.customFiles["idle"].str()&&restored.timer.due==custom.timer.due,"custom profile and timer roundtrip");
- auto bad=custom.json();bad["customFiles"]["idle"]="../../config.json";restored.load(bad,true);check(restored.customFiles["idle"].str().empty(),"bad asset path ignored without changing timer");
+ Config custom;custom.pet=2;custom.profiles[0].name="小桃";custom.name=custom.profiles[0].name;custom.builtinName="小橘";custom.profiles[0].files["idle"]=std::string(64,'a')+".png";custom.timer.start(1000);
+ Config restored;restored.load(Json::parse(custom.json().dump()),true);check(restored.pet==2&&restored.name=="小桃"&&restored.builtinName=="小橘"&&restored.profiles[0].files["idle"].str()==custom.profiles[0].files["idle"].str()&&restored.timer.due==custom.timer.due,"custom profile and timer roundtrip");
+ auto bad=custom.json();auto profiles=bad["customProfiles"].items();profiles[0]["files"]["idle"]="../../config.json";bad["customProfiles"]=profiles;restored.load(bad,true);check(restored.profiles[0].files["idle"].str().empty(),"bad asset path ignored without changing timer");
+}
+static void v111Regressions(){
+ Json legacy;legacy["pet"]=2;legacy["name"]="小桃";legacy["customName"]="小桃";legacy["customFiles"]["idle"]=std::string(64,'a')+".png";legacy["customFiles"]["sleep"]=std::string(64,'b')+".gif";
+ legacy["timer"]["mode"]=1;legacy["timer"]["running"]=true;legacy["timer"]["due"]=4000;legacy["x"]=-1500;legacy["scale"]=175;
+ Config c;c.load(legacy,true);check(c.activeCustom==0&&c.profiles[0].name=="小桃"&&c.profiles[0].files["sleep"].str()==std::string(64,'b')+".gif","v1.1.0 profile migrates intact to slot one");
+ check(!c.profiles[1].ready()&&!c.profiles[2].ready(),"migration leaves other slots independent");
+ for(int i=0;i<3;++i){c.profiles[size_t(i)].name="角色 "+std::to_string(i);for(auto state:customStates)c.profiles[size_t(i)].files[state]=std::string(64,char('a'+i))+".png";}
+ auto timer=c.timer.json().dump();int x=c.x,scale=c.scale;
+ for(int i=0;i<3;++i){check(c.selectCustom(i)&&c.activeCustom==i&&c.name=="角色 "+std::to_string(i),"select independent custom slot");check(c.timer.json().dump()==timer&&c.x==x&&c.scale==scale,"switch preserves timer and desktop");}
+ auto json=c.json();Config restored;restored.load(json,true);check(restored.activeCustom==2&&restored.name=="角色 2"&&restored.profiles[0].files["heart"].str()!=restored.profiles[2].files["heart"].str(),"three seven-action profiles roundtrip independently");
+ c.clearProfile(0);check(!c.profiles[0].ready()&&c.pet==2&&c.activeCustom==2&&c.profiles[2].ready(),"clear inactive slot does not affect active slot");
+ c.clearProfile(2);check(!c.profiles[2].ready()&&c.pet==0&&c.timer.json().dump()==timer,"clear active slot returns to builtin without stopping timer");
+ check(!c.selectCustom(3)&&!c.selectCustom(-1)&&!c.selectCustom(0)&&!c.selectBuiltin(2),"invalid or empty selection rejected");
+ for(int pet:{0,1,3,4}){check(c.selectBuiltin(pet,4)&&c.pet==pet&&c.timer.json().dump()==timer,"all builtin species preserve running timer");}
+ auto malformed=json;malformed["activeCustom"]=99;restored.load(malformed,true);check(restored.activeCustom==2,"active profile clamped");
+ std::string notes="# 更新紀錄\n## 1.1.10\n不屬於本版\n## 1.1.1（未發布）\n- **修正更新**\n- [說明](https://example.com)\n### 寵物\n新增熊貓\n## 1.1.0\n舊版文字\n";
+ auto text=readableNotes(notes,"1.1.1");check(text.find("修正更新")!=std::string::npos&&text.find("新增熊貓")!=std::string::npos&&text.find("舊版文字")==std::string::npos&&text.find("不屬於本版")==std::string::npos&&text.find("未發布")==std::string::npos&&text.find("**")==std::string::npos,"only current release plain text displayed");
+ check(text.find("說明（https://example.com）")!=std::string::npos,"markdown links remain readable");check(versionNotes(notes,"1.0.9").find("未提供")!=std::string::npos,"missing release does not show unrelated versions");check(readableNotes("- 新功能","1.1.1").find("新功能")!=std::string::npos,"already isolated notes supported");
+ check(parentDecision(false,true,false)==ParentDecision::Reject,"exited unrelated PID never accepted");check(parentDecision(true,false,false)==ParentDecision::Wait,"verified live parent must exit normally");check(parentDecision(true,true,true)==ParentDecision::Exited,"already exited verified handle wins over timeout");check(parentDecision(true,false,true)==ParentDecision::Timeout,"timeout never permits replacement");
+ Sprite image;std::set<uint32_t> identities;for(int pet:{0,1,3,4})for(int coat=0;coat<(pet==4?1:5);++coat){image.make(pet,coat,Action::Idle,0);identities.insert(crc32(reinterpret_cast<unsigned char*>(image.pixels.data()),image.pixels.size()*4));if(pet<3)continue;for(int a=0;a<=int(Action::Remind);++a){image.make(pet,coat,Action(a),1.3);int visible=0;for(auto color:image.pixels){check(!color||(color>>24)==255,"new species alpha");visible+=bool(color);}check(visible>200&&visible<1800,"new species visible in 48px canvas");}}
+ check(identities.size()==16,"six new and ten existing appearances are distinct");image.make(3,3,Action::Idle,0);check(std::count(image.pixels.begin(),image.pixels.end(),0xffe7a079)>0,"cockatiel orange cheeks");image.make(4,0,Action::Happy,0);check(std::count(image.pixels.begin(),image.pixels.end(),0xff98b77d)>0,"panda bamboo pose");
+}
+static void trustRegressions(){
+ const std::string primary(128,'a'),backup(128,'b'),rotated(128,'c'),nextBackup(128,'d');TrustState old;old.primary=primary;old.backup=backup;old.highest="1.1.1";
+ auto verifier=[&](const std::string&,const std::vector<unsigned char>&sig,const std::string&key){return sig.size()==64&&sig[0]==0xbb&&key==backup;};
+ Json policy;policy["schema"]=1;policy["epoch"]=1;policy["primary"]=rotated;policy["backup"]=backup;policy["minimumVersion"]="1.1.1";policy["revoked"]=Json::Array{};Json envelope;envelope["payload"]=policy.dump();envelope["signature"]=std::string(128,'b');
+ auto state=applyPolicy(old,envelope,verifier);check(state.accepts(rotated)&&state.accepts(backup)&&!state.accepts(primary),"authorized primary rotation and revocation");check(!state.permits("1.1.0")&&state.permits("1.1.1"),"trust version floor");state.highest="1.2.0";check(!state.permits("1.1.9")&&state.permits("1.2.0"),"highest installed version prevents downgrade");
+ auto bad=envelope;bad["signature"]=std::string(128,'a');rejects([&]{applyPolicy(old,bad,verifier);},"primary alone cannot rotate an offline-backup-protected ring");
+ rejects([&]{applyPolicy(state,envelope,verifier);},"old policy epoch cannot replay");
+ auto changed=policy;changed["epoch"]=2;bad["payload"]=changed.dump();bad["signature"]=std::string(128,'b');rejects([&]{applyPolicy(old,bad,verifier);},"policy cannot skip epochs");
+ changed=policy;changed["epoch"]=2;changed["primary"]=primary;bad["payload"]=changed.dump();rejects([&]{applyPolicy(state,bad,verifier);},"revoked key cannot be reintroduced");
+ changed["primary"]=rotated;changed["minimumVersion"]="1.0.0";bad["payload"]=changed.dump();rejects([&]{applyPolicy(state,bad,verifier);},"policy floor cannot decrease");
+ changed=policy;changed["epoch"]=2;changed["backup"]=nextBackup;bad["payload"]=changed.dump();auto backupRotated=applyPolicy(state,bad,verifier);check(backupRotated.accepts(nextBackup)&&!backupRotated.accepts(backup),"old offline authority can rotate and revoke itself");
+ Json chain=Json::Array{envelope},extended=Json::Array{envelope,bad};check(chainExtends(chain,extended)&&!chainExtends(extended,chain),"trust chain is append only");auto rewritten=chain;rewritten=Json::Array{bad};check(!chainExtends(chain,rewritten),"existing policy prefix cannot be rewritten");
+ TrustState single;single.primary=primary;auto bootstrap=[&](const std::string&,const std::vector<unsigned char>&sig,const std::string&key){return sig.size()==64&&key==primary;};check(applyPolicy(single,envelope,bootstrap).backup==backup,"single-key root can explicitly authorize first backup");
+ rejects([&]{applyPolicy(single,envelope,verifier);},"unknown backup cannot bootstrap itself");
+ check(old.accepts(primary)&&old.accepts(backup),"legacy main and emergency backup signatures both trusted");
+ rejects([]{publicPoint("unknown");},"invalid point encoding rejected");bad=envelope;bad["signature"]="00";rejects([&]{applyPolicy(old,bad,verifier);},"truncated policy signature rejected");
 }
 int main(){try{
- imageRegressions();timerRegressions();
+ trustRegressions();v111Regressions();imageRegressions();timerRegressions();
  auto j=Json::parse("{\"text\":\"繁體中文\\n\\uD83D\\uDC31\",\"n\":-1.25e2,\"b\":true,\"a\":[null,2]}");check(j["n"].num()==-125,"json number");check(Json::parse(j.dump()).dump()==j.dump(),"json roundtrip");check(j["missing"].str("fallback")=="fallback","missing default");
  for(auto s:{"", "01","1.","1e", "NaN","1e999", "[1,]", "{\"a\":1,\"a\":2}","\"\\uD800\"", "true false", "\"x\n\""})rejects([&]{Json::parse(s);},"strict JSON rejection");
  rejects([]{Json::parse(std::string(40,'[')+std::string(40,']'));},"JSON nesting bound");rejects([]{Json::parse(std::string(1024*1024+1,' '));},"JSON size bound");
