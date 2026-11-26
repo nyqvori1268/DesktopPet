@@ -5,6 +5,8 @@
 #include <uxtheme.h>
 namespace pet {
 inline std::wstring controlText(HWND control){int length=GetWindowTextLengthW(control);std::wstring text(size_t(length)+1,0);GetWindowTextW(control,text.data(),length+1);text.resize(length);return text;}
+inline void positionChild(HDWP&batch,HWND child,int x,int y,int width,int height){if(!child)return;constexpr UINT flags=SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOREDRAW|SWP_NOCOPYBITS;if(batch){batch=DeferWindowPos(batch,child,nullptr,x,y,width,height,flags);if(batch)return;}SetWindowPos(child,nullptr,x,y,width,height,flags);}
+inline void setTextIfChanged(HWND control,const std::wstring&text){if(controlText(control)!=text)SetWindowTextW(control,text.c_str());}
 struct UITheme{
  bool dark=false,contrast=false;COLORREF background=0,card=0,foreground=0,muted=0,accent=0,border=0;HBRUSH backBrush=nullptr,cardBrush=nullptr;
  ~UITheme(){if(backBrush)DeleteObject(backBrush);if(cardBrush)DeleteObject(cardBrush);}

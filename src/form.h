@@ -1,6 +1,7 @@
 #pragma once
 #include "platform.h"
 #include "ui_theme.h"
+#include "desktop_ui_logic.h"
 #include <imm.h>
 #include <functional>
 namespace pet {
@@ -15,6 +16,7 @@ struct Field{
  bool combo()const{return !optionIds.empty()||!options.empty();}
 };
 struct Form{
+ bool resizable=false;int logicalWidth=640,logicalHeight=480;
  UITheme theme;std::vector<TextId>tabIds;int selectedTab=0;HWND tabs=nullptr;std::function<void(int,int)>onTab;
  std::vector<Field>fields;std::function<bool(std::vector<Field>&)>apply;std::wstring title;TextId titleId=TextId::Count;
  std::function<std::wstring()>titleFactory;std::function<void(Language)>onLanguage;std::function<void()>preview;HWND hwnd=nullptr;HFONT font=nullptr;bool closed=false,messageMode=false,showCancel=true;TextId okId=TextId::S018,cancelId=TextId::S019;int dpi=96;
@@ -32,6 +34,7 @@ struct Form{
   SetWindowTextW(GetDlgItem(hwnd,IDHELP),tw(TextId::Preview));SetWindowTextW(GetDlgItem(hwnd,IDOK),tw(okId));SetWindowTextW(GetDlgItem(hwnd,IDCANCEL),tw(cancelId));layout();
  }
  void layout(){
+  if(resizable&&fields.size()==1&&tabs){layoutEditor();return;}
   HFONT previousFont=font;font=CreateFontW(-px(14),0,0,0,FW_NORMAL,0,0,0,DEFAULT_CHARSET,0,0,0,0,uiFontName());HDC dc=GetDC(hwnd);auto old=SelectObject(dc,font);int y=px(16);if(tabs){SetWindowPos(tabs,nullptr,px(16),y,px(528),px(34),SWP_NOZORDER);SendMessageW(tabs,WM_SETFONT,WPARAM(font),TRUE);TabCtrl_SetItemSize(tabs,px(168),px(30));y+=px(46);}
   if(messageMode){auto&field=fields.front();ShowWindow(field.labelWindow,SW_HIDE);SetWindowPos(field.input,nullptr,px(16),y,px(528),px(156),SWP_NOZORDER);SendMessageW(field.input,WM_SETFONT,WPARAM(font),TRUE);y+=px(172);}
   else for(auto&field:fields){RECT measured{0,0,px(204),0};auto caption=field.caption();DrawTextW(dc,caption.c_str(),-1,&measured,DT_CALCRECT|DT_WORDBREAK|DT_NOPREFIX);int h=field.multiline?px(field.multilineHeight):px(28),row=std::max(h,int(measured.bottom)+px(4));
@@ -41,8 +44,14 @@ struct Form{
   if(previousFont)DeleteObject(previousFont);
   RECT size{0,0,px(560),y+px(52)};AdjustWindowRectExForDpi(&size,WS_CAPTION|WS_SYSMENU,FALSE,WS_EX_DLGMODALFRAME,dpi);SetWindowPos(hwnd,nullptr,0,0,size.right-size.left,size.bottom-size.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
  }
+ void layoutEditor(){
+  if(!hwnd||!tabs||fields.empty())return;RECT client{};GetClientRect(hwnd,&client);auto previous=font;font=CreateFontW(-px(14),0,0,0,FW_NORMAL,0,0,0,DEFAULT_CHARSET,0,0,0,0,uiFontName());HDC dc=GetDC(hwnd);auto old=SelectObject(dc,font);RECT help{0,0,std::max(1,int(client.right)-px(32)),0};auto caption=fields[0].caption();DrawTextW(dc,caption.c_str(),-1,&help,DT_CALCRECT|DT_WORDBREAK|DT_NOPREFIX);SelectObject(dc,old);ReleaseDC(hwnd,dc);auto plan=dialogueEditorLayout(int(client.right),int(client.bottom),dpi,int(help.bottom));HDWP batch=BeginDeferWindowPos(7);auto place=[&](HWND child,UiRect r){positionChild(batch,child,r.x,r.y,r.w,r.h);SendMessageW(child,WM_SETFONT,WPARAM(font),FALSE);};
+  place(tabs,plan.tabs);TabCtrl_SetPadding(tabs,0,0);TabCtrl_SetItemSize(tabs,languageTabWidth(plan.tabs.w,dpi),px(30));place(fields[0].labelWindow,plan.instructions);place(fields[0].input,plan.input);place(GetDlgItem(hwnd,IDHELP),plan.preview);place(GetDlgItem(hwnd,IDOK),plan.accept);place(GetDlgItem(hwnd,IDCANCEL),plan.cancel);if(batch)EndDeferWindowPos(batch);if(previous)DeleteObject(previous);RedrawWindow(hwnd,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);
+ }
  static LRESULT CALLBACK proc(HWND window,UINT message,WPARAM wp,LPARAM lp){
   auto self=reinterpret_cast<Form*>(GetWindowLongPtrW(window,GWLP_USERDATA));if(message==WM_NCCREATE){self=static_cast<Form*>(reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams);self->hwnd=window;SetWindowLongPtrW(window,GWLP_USERDATA,LONG_PTR(self));}if(!self)return DefWindowProcW(window,message,wp,lp);
+  if(message==WM_GETMINMAXINFO&&self->resizable){auto limits=reinterpret_cast<MINMAXINFO*>(lp);RECT r{0,0,self->px(480),self->px(320)};AdjustWindowRectExForDpi(&r,WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN,FALSE,WS_EX_DLGMODALFRAME,self->dpi);limits->ptMinTrackSize={r.right-r.left,r.bottom-r.top};return 0;}
+  if(message==WM_SIZE&&self->resizable){if(self->tabs&&wp!=SIZE_MINIMIZED){if(wp!=SIZE_MAXIMIZED){RECT r{};GetClientRect(window,&r);self->logicalWidth=std::clamp(MulDiv(int(r.right),96,self->dpi),480,1600);self->logicalHeight=std::clamp(MulDiv(int(r.bottom),96,self->dpi),320,1200);}self->layout();}return 0;}
   if(message==WM_SETTINGCHANGE||message==WM_THEMECHANGED){self->theme.sync(window);InvalidateRect(window,nullptr,TRUE);return 0;}
   if(message==WM_ERASEBKGND){RECT r{};GetClientRect(window,&r);FillRect(HDC(wp),&r,self->theme.backBrush);return 1;}
   if(message==WM_CTLCOLORSTATIC||message==WM_CTLCOLORBTN||message==WM_CTLCOLOREDIT||message==WM_CTLCOLORLISTBOX)return LRESULT(self->theme.color(HDC(wp),message==WM_CTLCOLOREDIT||message==WM_CTLCOLORLISTBOX));
@@ -56,15 +65,17 @@ struct Form{
  void show(HWND owner,HINSTANCE instance){
   static bool registered=false;if(!registered){WNDCLASSW wc{};wc.hInstance=instance;wc.lpfnWndProc=proc;wc.lpszClassName=L"PetForm";wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);wc.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&wc);registered=true;}
   dpi=int(owner?GetDpiForWindow(owner):GetDpiForSystem());if(dpi<=0)dpi=96;POINT cursor{};GetCursorPos(&cursor);MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromPoint(cursor,MONITOR_DEFAULTTONEAREST),&mi);
-  hwnd=CreateWindowExW(WS_EX_DLGMODALFRAME,L"PetForm",L"",WS_CAPTION|WS_SYSMENU,mi.rcWork.left+px(24),mi.rcWork.top+px(24),px(560),px(400),owner,nullptr,instance,this);
-  int id=100;for(auto&field:fields){field.labelWindow=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE,0,0,1,1,hwnd,nullptr,instance,nullptr);DWORD style=WS_CHILD|WS_VISIBLE|WS_TABSTOP;const wchar_t*cls=L"EDIT";
+  hwnd=CreateWindowExW(WS_EX_DLGMODALFRAME,L"PetForm",L"",(resizable?WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN:WS_CAPTION|WS_SYSMENU),mi.rcWork.left+px(24),mi.rcWork.top+px(24),px(560),px(400),owner,nullptr,instance,this);
+  if(!hwnd)throw std::runtime_error(tr(TextId::S247));
+  if(resizable){RECT size{0,0,px(logicalWidth),px(logicalHeight)};AdjustWindowRectExForDpi(&size,WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN,FALSE,WS_EX_DLGMODALFRAME,dpi);SetWindowPos(hwnd,nullptr,0,0,std::min(int(size.right-size.left),int(mi.rcWork.right-mi.rcWork.left)),std::min(int(size.bottom-size.top),int(mi.rcWork.bottom-mi.rcWork.top)),SWP_NOMOVE|SWP_NOZORDER);}
+  int id=100;for(auto&field:fields){field.labelWindow=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE,0,0,1,1,hwnd,nullptr,instance,nullptr);DWORD style=WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_CLIPSIBLINGS;const wchar_t*cls=L"EDIT";
    if(field.check){cls=L"BUTTON";style|=BS_AUTOCHECKBOX;}else if(field.combo()){cls=L"COMBOBOX";style|=CBS_DROPDOWNLIST|WS_VSCROLL;}else style|=WS_BORDER|(field.multiline?ES_MULTILINE|ES_AUTOVSCROLL|ES_WANTRETURN|WS_VSCROLL:ES_AUTOHSCROLL);
    field.input=CreateWindowExW(0,cls,field.check?L"":field.value.c_str(),style,0,0,1,1,hwnd,reinterpret_cast<HMENU>(INT_PTR(id++)),instance,nullptr);
    if(field.check)SendMessageW(field.input,BM_SETCHECK,field.value==L"1"?BST_CHECKED:BST_UNCHECKED,0);else if(!field.combo()){SendMessageW(field.input,EM_SETLIMITTEXT,field.readOnly?65536:field.multiline?field.textLimit:120,0);if(field.readOnly)SendMessageW(field.input,EM_SETREADONLY,TRUE,0);}
   }
   CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDOK),instance,nullptr);CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDCANCEL),instance,nullptr);
   CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDHELP),instance,nullptr);
-  if(!tabIds.empty())tabs=CreateWindowW(WC_TABCONTROLW,L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|TCS_BUTTONS|TCS_FLATBUTTONS|TCS_FIXEDWIDTH|TCS_OWNERDRAWFIXED,0,0,1,1,hwnd,nullptr,instance,nullptr);
+  if(!tabIds.empty())tabs=CreateWindowW(WC_TABCONTROLW,L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|TCS_BUTTONS|TCS_FLATBUTTONS|TCS_FIXEDWIDTH|TCS_OWNERDRAWFIXED|TCS_MULTILINE,0,0,1,1,hwnd,nullptr,instance,nullptr);
   theme.sync(hwnd);for(auto&field:fields)SetWindowTheme(field.input,L"",L"");
   // Creation must not reinterpret values in an old UI language.
   localize(uiLanguage());RECT r{};GetWindowRect(hwnd,&r);int w=r.right-r.left,h=r.bottom-r.top;SetWindowPos(hwnd,nullptr,std::max(int(mi.rcWork.left),int((mi.rcWork.left+mi.rcWork.right-w)/2)),std::max(int(mi.rcWork.top),int((mi.rcWork.top+mi.rcWork.bottom-h)/2)),0,0,SWP_NOSIZE|SWP_NOZORDER);

@@ -17,7 +17,7 @@ inline const char* languageCode(Language lang){return languageCodes[size_t(suppo
 inline Language languageFromCode(const std::string&code){for(size_t i=0;i<languageCodes.size();++i)if(code==languageCodes[i])return Language(i);return Language::EnUS;}
 inline Language detectDisplayLanguage(std::string locale){std::transform(locale.begin(),locale.end(),locale.begin(),[](unsigned char c){return c>='A'&&c<='Z'?char(c-'A'+'a'):char(c);});if(locale=="zh-tw"||locale=="zh-hk"||locale.rfind("zh-hant",0)==0)return Language::ZhTW;if(locale=="ja"||locale.rfind("ja-",0)==0)return Language::JaJP;return Language::EnUS;}
 enum class TextId{
-S000,S001,S002,S003,S004,S005,S006,S007,S008,S009,S010,S011,S012,S013,S014,S015,S016,S017,S018,S019,S020,S021,S022,S023,S024,S025,S026,S027,S028,S029,S030,S031,S032,S033,S034,S035,S036,S037,S038,S039,S040,S041,S042,S043,S044,S045,S046,S047,S048,S049,S050,S051,S052,S053,S054,S055,S056,S057,S058,S059,S060,S061,S062,S063,S064,S065,S066,S067,S068,S069,S070,S071,S072,S073,S074,S075,S076,S077,S078,S079,S080,S081,S082,S083,S084,S085,S086,S087,S088,S089,S090,S091,S092,S093,S094,S095,S096,S097,S098,S099,S100,S101,S102,S103,S104,S105,S106,S107,S108,S109,S110,S111,S112,S113,S114,S115,S116,S117,S118,S119,S120,S121,S122,S123,S124,S125,S126,S127,S128,S129,S130,S131,S132,S133,S134,S135,S136,S137,S138,S139,S140,S141,S142,S143,S144,S145,S146,S147,S148,S149,S150,S151,S152,S153,S154,S155,S156,S157,S158,S159,S160,S161,S162,S163,S164,S165,S166,S167,S168,S169,S170,S171,S172,S173,S174,S175,S176,S177,S178,S179,S180,S181,S182,S183,S184,S185,S186,S187,S188,S189,S190,S191,S192,S193,S194,S195,S196,S197,S198,S199,S200,S201,S202,S203,S204,S205,S206,S207,S208,S209,S210,S211,S212,S213,S214,S215,S216,S217,S218,S219,S220,S221,S222,S223,S224,S225,S226,S227,S228,S229,S230,S231,S232,S233,S234,S235,S236,S237,S238,S239,S240,S241,S242,S243,S244,S245,S246,S247,S248,S249,S250,S251,S252,S253,S254,S255,S256,S257,S258,S259,S260,S261,S262,S263,S264,S265,S266,S267,S268,S269,S270,S271,S272,S273,Language,DialogueLanguage,FollowUI,ZhTW,EnUS,JaJP,ValueRange,ProfileTitle,CustomPrefix,AboutTitle,AboutVersion,AboutDescription,AboutDeveloper,AboutLanguages,AboutLicense,AboutComponents,ProjectLink,IssuesLink,ChangelogLink,CheckUpdates,Close,LinkFailed,Weekday0,Weekday1,Weekday2,Weekday3,Weekday4,Weekday5,Weekday6,InvalidWeekdays,UpdateSummary,NumberRange,ReminderConfirmHint,Yes,No,EditDialogue,DialogueState,DialogueGeneral,DialogueHappy,DialoguePet,DialogueAngry,DialogueDrag,DialogueSleep,DialogueWake,DialogueRemind,DialogueEnabled,GenericFallback,DialogueLines,Preview,DialogueLimit,GenericDialogue,GenericReminder,EmptyPreview,Dolphin,WhaleShark,DolphinBlue,DolphinPink,DolphinGray,WhaleSharkDeep,WhaleSharkLight,WhaleSharkGray,OceanResourceError,TransactionError,DllPolicyError,BuiltinResourceError,InvalidTime,TimerSchedule,TimerMessage,TimerCurrent,StartTimer,SaveAlarm,TimerPaused,TimerRunning,TimerStopped,TimerPending,TimerRemaining,AM,PM,Period,Once,EveryDay,Weekdays,Weekend,CustomDays,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday,TimerSummary,DialogueEditLanguage,TimerMinutes,UIHint,DialogueCapacity,Count};
+S000,S001,S002,S003,S004,S005,S006,S007,S008,S009,S010,S011,S012,S013,S014,S015,S016,S017,S018,S019,S020,S021,S022,S023,S024,S025,S026,S027,S028,S029,S030,S031,S032,S033,S034,S035,S036,S037,S038,S039,S040,S041,S042,S043,S044,S045,S046,S047,S048,S049,S050,S051,S052,S053,S054,S055,S056,S057,S058,S059,S060,S061,S062,S063,S064,S065,S066,S067,S068,S069,S070,S071,S072,S073,S074,S075,S076,S077,S078,S079,S080,S081,S082,S083,S084,S085,S086,S087,S088,S089,S090,S091,S092,S093,S094,S095,S096,S097,S098,S099,S100,S101,S102,S103,S104,S105,S106,S107,S108,S109,S110,S111,S112,S113,S114,S115,S116,S117,S118,S119,S120,S121,S122,S123,S124,S125,S126,S127,S128,S129,S130,S131,S132,S133,S134,S135,S136,S137,S138,S139,S140,S141,S142,S143,S144,S145,S146,S147,S148,S149,S150,S151,S152,S153,S154,S155,S156,S157,S158,S159,S160,S161,S162,S163,S164,S165,S166,S167,S168,S169,S170,S171,S172,S173,S174,S175,S176,S177,S178,S179,S180,S181,S182,S183,S184,S185,S186,S187,S188,S189,S190,S191,S192,S193,S194,S195,S196,S197,S198,S199,S200,S201,S202,S203,S204,S205,S206,S207,S208,S209,S210,S211,S212,S213,S214,S215,S216,S217,S218,S219,S220,S221,S222,S223,S224,S225,S226,S227,S228,S229,S230,S231,S232,S233,S234,S235,S236,S237,S238,S239,S240,S241,S242,S243,S244,S245,S246,S247,S248,S249,S250,S251,S252,S253,S254,S255,S256,S257,S258,S259,S260,S261,S262,S263,S264,S265,S266,S267,S268,S269,S270,S271,S272,S273,Language,DialogueLanguage,FollowUI,ZhTW,EnUS,JaJP,ValueRange,ProfileTitle,CustomPrefix,AboutTitle,AboutVersion,AboutDescription,AboutDeveloper,AboutLanguages,AboutLicense,AboutComponents,ProjectLink,IssuesLink,ChangelogLink,CheckUpdates,Close,LinkFailed,Weekday0,Weekday1,Weekday2,Weekday3,Weekday4,Weekday5,Weekday6,InvalidWeekdays,UpdateSummary,NumberRange,ReminderConfirmHint,Yes,No,EditDialogue,DialogueState,DialogueGeneral,DialogueHappy,DialoguePet,DialogueAngry,DialogueDrag,DialogueSleep,DialogueWake,DialogueRemind,DialogueEnabled,GenericFallback,DialogueLines,Preview,DialogueLimit,GenericDialogue,GenericReminder,EmptyPreview,Dolphin,WhaleShark,DolphinBlue,DolphinPink,DolphinGray,WhaleSharkDeep,WhaleSharkLight,WhaleSharkGray,OceanResourceError,TransactionError,DllPolicyError,BuiltinResourceError,InvalidTime,TimerSchedule,TimerMessage,TimerCurrent,StartTimer,SaveAlarm,TimerPaused,TimerRunning,TimerStopped,TimerPending,TimerRemaining,AM,PM,Period,Once,EveryDay,Weekdays,Weekend,CustomDays,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday,TimerSummary,DialogueEditLanguage,TimerMinutes,UIHint,DialogueCapacity,ShowNameplate,ResetName,DefaultSize,NameCustom,PetName0,PetName1,PetName2,PetName3,PetName4,PetName5,PetName6,PetName7,PetName8,PetName9,PetName10,PetName11,PetName12,PetName13,PetName14,PetName15,PetName16,PetName17,PetName18,PetName19,PetName20,PetName21,Count};
 struct Translation{const char*id;std::array<const char*,3>value;};
 inline constexpr std::array<Translation,size_t(TextId::Count)> translations{{
  {"S000", {"時間到了", "Time's up", "時間です"}},
@@ -390,6 +390,32 @@ inline constexpr std::array<Translation,size_t(TextId::Count)> translations{{
  {"TimerMinutes", {"{0} 分鐘", "{0} min", "{0} 分"}},
  {"UIHint", {"滾輪／↑↓ 調整數字；數值可循環。", "Use the mouse wheel or ↑↓; values wrap.", "ホイール／↑↓で数値を変更できます。端まで行くと循環します。"}},
  {"DialogueCapacity", {"台詞總容量已達設定檔安全上限，請先刪減其他台詞。", "The dialogue storage limit has been reached. Shorten other lines before saving.", "セリフの保存容量が上限に達しました。他のセリフを減らしてから保存してください。"}},
+ {"ShowNameplate", {"顯示名牌", "Show nameplate", "名札を表示"}},
+ {"ResetName", {"恢復預設名稱", "Reset pet name", "名前を初期設定に戻す"}},
+ {"DefaultSize", {"恢復 100%", "Reset to 100%", "100% に戻す"}},
+ {"NameCustom", {"自訂寵物 {0}", "Custom pet {0}", "カスタムペット {0}"}},
+ {"PetName0", {"小橘", "Sunny", "こむぎ"}},
+ {"PetName1", {"小花", "Patches", "みけ"}},
+ {"PetName2", {"小雪", "Snow", "ゆき"}},
+ {"PetName3", {"小墨", "Ink", "くろ"}},
+ {"PetName4", {"小虎", "Tigger", "とら"}},
+ {"PetName5", {"豆豆", "Mochi", "まめ"}},
+ {"PetName6", {"黑糖", "Cocoa", "くろまめ"}},
+ {"PetName7", {"白玉", "Pearl", "しらたま"}},
+ {"PetName8", {"布丁", "Pudding", "ぷりん"}},
+ {"PetName9", {"奶茶", "Chai", "ミルク"}},
+ {"PetName10", {"抹茶", "Matcha", "まっちゃ"}},
+ {"PetName11", {"小藍", "Sky", "そら"}},
+ {"PetName12", {"檸檬", "Lemon", "レモン"}},
+ {"PetName13", {"芝麻", "Sesame", "ごま"}},
+ {"PetName14", {"奶油", "Butter", "バター"}},
+ {"PetName15", {"團團", "Bao", "だんご"}},
+ {"PetName16", {"小浪", "Splash", "なみ"}},
+ {"PetName17", {"桃泡", "Peach", "もも"}},
+ {"PetName18", {"海霧", "Misty", "しお"}},
+ {"PetName19", {"星海", "Starry", "ほし"}},
+ {"PetName20", {"泡泡", "Bubbles", "あわ"}},
+ {"PetName21", {"慢慢", "Mellow", "のんびり"}},
 }};
 inline const char* tr(TextId id,Language language=uiLanguage()){size_t index=size_t(id);return index<translations.size()?translations[index].value[size_t(supportedLanguage(int(language)))]:"[Missing text]";}
 inline std::string formatText(TextId id,const std::vector<std::string>&arguments,Language language=uiLanguage()){

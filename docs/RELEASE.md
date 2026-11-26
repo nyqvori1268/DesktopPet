@@ -125,3 +125,12 @@ Windows 建置及測試後，既有 Package.ps1 會自動產生 `DesktopPet_v1.4
 發布前依 [本版驗證紀錄](V150_TESTING.md) 完成 Windows Release／CTest、原生控制與 IME／DPI／深淺色實測、v1.4.0 設定遷移與簽署更新回滾、PE 防護及雙 ZIP 敏感資料檢查。此開發增量包不是自動更新包，不能直接掛到 update.json。
 
 本版動畫追加：ocean.rc.in 使用六個 marine-*.ocp；renewed.rc.in 資源 ID／路徑不變，五貓檔含修正姿勢與新增影格。原始來源與 GIF 是開發／人工驗收檔，既有 install／Package.ps1 不將它們加進正式 ZIP，只內嵌主程式。兩種正式 ZIP 都帶同一個 DesktopPet.exe，因此不用修改五檔更新白名單。確認 `v150_animations`、`renewed_embedded`、`ocean_embedded` 及既有所有安全測試後，再依原流程簽署／驗證／打包；本次不執行發布。
+
+
+## v1.5.1 介面及名稱設定
+
+基準為最新 main／正式 v1.5.0 Tag `522856486320e504669ebe060882bb55dcee519a`，以全新乾淨 clone 開始，未用先前未提交的工作區覆蓋最新版本。版號只從 CMake 更新為 1.5.1，RC／manifest／Updater／關於沿用既有範本。
+
+新增名牌及 UI 程式碼均編入 EXE，仍只打包原五檔；Trackbar 使用現有 Common Controls，名牌使用原已連結的 GDI+，不增加 Runtime 或 DLL 白名單。所有素材、金鑰、ECDSA／SHA-256／DPJ3／DPAPI、交易／信任／回滾、DLL／MSVC 防護、Package.ps1 與最新 build.yml（含 EXE 雜湊／provenance）不變。未建立 Tag、Commit 或 Release。
+
+發布前完成 [V151_TESTING.md](V151_TESTING.md) 中的 Windows Release／原生 UI／高 DPI／輸入法／更新驗證，尤其檢查原生窗口捲動像素與 GDI 物件測試。新增 v151_native_ui 需要可繪製桌面的 Windows 工作階段，CMake 已給 60 秒 timeout；若 CI 無桌面不能把未完成 GUI 驗證標示通過。
