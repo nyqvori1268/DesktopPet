@@ -18,8 +18,33 @@ std::vector<unsigned char> readUpdateFile(const fs::path&path,size_t limit){
 std::string updateTarget(const fs::path&path){auto full=fs::absolute(path).lexically_normal().wstring();for(auto&c:full)c=wchar_t(std::towlower(c));return utf8(full);}
 static std::vector<unsigned char> protectedJournal(const std::vector<unsigned char>&data,bool seal){DATA_BLOB in{DWORD(data.size()),const_cast<BYTE*>(data.data())},out{};BOOL ok=seal?CryptProtectData(&in,L"DesktopPet transaction v2",nullptr,nullptr,nullptr,CRYPTPROTECT_UI_FORBIDDEN,&out):CryptUnprotectData(&in,nullptr,nullptr,nullptr,nullptr,CRYPTPROTECT_UI_FORBIDDEN,&out);if(!ok)transactionError();std::vector<unsigned char>result;try{result.assign(out.pbData,out.pbData+out.cbData);}catch(...){LocalFree(out.pbData);throw;}LocalFree(out.pbData);return result;}
 void writeUpdateFile(const fs::path&path,const std::vector<unsigned char>&data){UpdatePathLock lock(path.parent_path());rejectReparse(path);if(fs::exists(path))readUpdateFile(path);atomicWrite(path,data.data(),data.size());if(readUpdateFile(path)!=data)transactionError();}
-void saveTransaction(const fs::path&target,const Json&j){validateTransaction(j);if(j["target"].str()!=updateTarget(target))transactionError();auto text=j.dump();auto data=protectedJournal(std::vector<unsigned char>(text.begin(),text.end()),true);data.insert(data.begin(),{'D','P','J','2'});writeUpdateFile(target/transactionJournal,data);}
-Json loadTransaction(const fs::path&target){auto bytes=readUpdateFile(target/transactionJournal,256*1024);if(bytes.size()<4||std::string(bytes.begin(),bytes.begin()+4)!="DPJ2")transactionError();auto plain=protectedJournal(std::vector<unsigned char>(bytes.begin()+4,bytes.end()),false);auto j=Json::parse(std::string(plain.begin(),plain.end()));validateTransaction(j);auto manifest=j["manifest"].str();if(j["target"].str()!=updateTarget(target)||j["receipt"].str()!=sha256(std::vector<unsigned char>(manifest.begin(),manifest.end())))transactionError();return j;}
+// DPJ3 adds a checksum over the complete DPAPI blob and an integrity
+// digest inside the protected plaintext. The outer digest detects corruption
+// of blob metadata; it is not a substitute for DPAPI authentication.
+void saveTransaction(const fs::path&target,const Json&j){
+ validateTransaction(j);if(j["target"].str()!=updateTarget(target))transactionError();
+ auto text=j.dump();std::vector<unsigned char>plain(text.begin(),text.end());
+ auto inner=sha256(plain);plain.insert(plain.begin(),inner.begin(),inner.end());
+ auto data=protectedJournal(plain,true);auto outer=sha256(data);
+ data.insert(data.begin(),{'D','P','J','3'});data.insert(data.end(),outer.begin(),outer.end());
+ writeUpdateFile(target/transactionJournal,data);
+}
+Json loadTransaction(const fs::path&target){
+ auto bytes=readUpdateFile(target/transactionJournal,256*1024);
+ constexpr size_t digestSize=64;
+ // Older or unknown journal formats must be left untouched for manual recovery.
+ if(bytes.size()<=4+digestSize||std::string(bytes.begin(),bytes.begin()+4)!="DPJ3")transactionError();
+ auto end=bytes.end()-digestSize;
+ std::vector<unsigned char>cipher(bytes.begin()+4,end);
+ if(sha256(cipher)!=std::string(end,bytes.end()))transactionError();
+ auto plain=protectedJournal(cipher,false);
+ if(plain.size()<=digestSize)transactionError();
+ std::vector<unsigned char>payload(plain.begin()+digestSize,plain.end());
+ if(sha256(payload)!=std::string(plain.begin(),plain.begin()+digestSize))transactionError();
+ auto j=Json::parse(std::string(payload.begin(),payload.end()));validateTransaction(j);
+ auto manifest=j["manifest"].str();if(j["target"].str()!=updateTarget(target)||j["receipt"].str()!=sha256(std::vector<unsigned char>(manifest.begin(),manifest.end())))transactionError();
+ return j;
+}
 struct TransactionIO{
  fs::path target,backup;std::map<std::string,std::vector<unsigned char>> verifiedBackups;
  explicit TransactionIO(fs::path root):target(std::move(root)),backup(target/transactionBackup){}

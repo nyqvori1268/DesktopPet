@@ -34,7 +34,21 @@ static void transactionFilesystemTests(){
   bool rejected=false;auto copied=root/L"other";fs::create_directory(copied);auto cipher=readUpdateFile(root/transactionJournal);atomicWrite(copied/transactionJournal,cipher.data(),cipher.size());try{loadTransaction(copied);}catch(...){rejected=true;}require(rejected,"journal bound to original target directory");
   {UpdatePathLock guard(root/L"data");require(!MoveFileW((root/L"data").c_str(),(root/L"moved").c_str()),"locked parent cannot be swapped or renamed");}
   require(CreateHardLinkW((root/L"link").c_str(),(root/L"README.md").c_str(),nullptr)!=FALSE,"NTFS hardlink fixture");rejected=false;try{readUpdateFile(root/L"README.md");}catch(...){rejected=true;}require(rejected,"hardlinked update files rejected");fs::remove(root/L"link");
-  cipher[10]^=1;writeUpdateFile(root/transactionJournal,cipher);rejected=false;try{loadTransaction(root);}catch(...){rejected=true;}require(rejected&&fs::exists(root/transactionBackup/L"DesktopPet.exe"),"tampered DPAPI journal rejected with backups preserved");fs::remove_all(root);
+  auto expectTamperRejected=[&](const std::vector<unsigned char>&bad,const char*message){
+   writeUpdateFile(root/transactionJournal,bad);bool refused=false;try{recoverUpdate(root);}catch(...){refused=true;}require(refused,message);
+   require(readUpdateFile(root/transactionJournal)==bad,"rejected journal preserved unchanged");
+   for(auto name:transactionFiles){require(sha256(readUpdateFile(root/transactionBackup/wide(name)))==j["files"][name]["before"].str(),"all backups preserved after journal rejection");require(sha256(readUpdateFile(root/wide(name)))==j["files"][name]["before"].str(),"installed files unchanged after journal rejection");}
+  };
+  require(cipher.size()>4+64+10,"protected journal envelope size");
+  auto bad=cipher;bad[10]^=1;expectTamperRejected(bad,"tampered DPAPI journal rejected with backups preserved");
+  // Alter the protected blob's authentication data and recompute the public
+  // checksum. DPAPI/inner integrity validation must still reject corruption.
+  bad=cipher;bad[bad.size()-65]^=1;
+  auto checksum=sha256(std::vector<unsigned char>(bad.begin()+4,bad.end()-64));
+  std::copy(checksum.begin(),checksum.end(),bad.end()-64);
+  expectTamperRejected(bad,"modified protected blob rejected even with recomputed checksum");
+  bad=cipher;bad[3]='2';expectTamperRejected(bad,"legacy journal preserved for manual recovery");
+  writeUpdateFile(root/transactionJournal,cipher);require(loadTransaction(root).dump()==j.dump(),"original journal remains readable after tamper tests");fs::remove_all(root);
  }catch(...){std::error_code ec;fs::remove_all(root,ec);throw;}
  std::cout<<"PASS real process-abort journal durability, DPAPI tamper, target binding, parent locks and hardlink refusal\n";
 }
