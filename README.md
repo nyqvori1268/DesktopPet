@@ -110,3 +110,28 @@ Tag `vX.Y.Z` 必須與 CMake 版本相同；CI 建置、測試、打包、驗證
 
 
 開發中美術重製：[16 種外觀預覽](docs/renewed-pets.png)／[動作預覽](docs/renewed-actions.png)。版本仍為 1.3.0，這些修改尚未正式發布；Windows 顯示與編譯待驗證。
+
+## Code signing policy
+
+DesktopPet is applying for free code signing provided by [SignPath.io](https://signpath.io/), with certificates provided by the [SignPath Foundation](https://signpath.org/).
+
+### Team roles
+
+- Authors: [nyqvori1268](https://github.com/nyqvori1268)
+- Reviewers: [nyqvori1268](https://github.com/nyqvori1268)
+- Approvers: [nyqvori1268](https://github.com/nyqvori1268)
+
+### Release security
+
+- Official releases are built from the public source repository using GitHub Actions.
+- Release builds must pass automated security and regression tests.
+- Code signing requests will require manual approval.
+- Automatic updates are verified using ECDSA P-256 signatures and SHA-256 hashes.
+
+### Privacy policy
+
+DesktopPet does not intentionally collect telemetry, analytics, or personal information. Application settings are stored locally.
+
+The application connects to GitHub to check for and download software updates. GitHub's privacy policy applies to these network requests.
+
+[GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
