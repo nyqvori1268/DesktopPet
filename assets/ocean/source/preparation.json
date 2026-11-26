@@ -1,0 +1,53 @@
+{
+  "tool": "built-in image generation, followed by deterministic atlas extraction and nearest-neighbor palette mapping",
+  "alphaThreshold": 240,
+  "marineRadius": 51,
+  "marine": [
+    {
+      "index": 0,
+      "rawGenerationSHA256": "d71e269b814166342d1a036b8f8f396d3a7c9216f7d882a89624928298fef13c",
+      "reference": "ocean-0.ocp",
+      "referenceSHA256": "313b64a8c70ec13117207f49aa2bc6538bae9a8bcf13809bd6cc938ca88a5733",
+      "sourceSHA256": "f2ea740eb623e79c54bb4da0843b0f2c289008e175d527b1c050edc2d28f5606"
+    },
+    {
+      "index": 1,
+      "rawGenerationSHA256": "eb952ce84660eb097c82f52b6f991d68716ea04b5f78f2bf93a4fbb4c5875cf6",
+      "reference": "ocean-1.ocp",
+      "referenceSHA256": "c6258522507d4d4b52a8cac43fac095b8b6a64b0956309b021b2f4c2ef9d8645",
+      "sourceSHA256": "a255e8938eb10311bf722b96bf0443ca00dcd73092d57a1fee54213516ce649f"
+    },
+    {
+      "index": 2,
+      "rawGenerationSHA256": "56885d51dc0216771672e77087ca1723927ffff1c88400ea4171b98c5c79f8fa",
+      "reference": "ocean-2.ocp",
+      "referenceSHA256": "b176314e747230da42f9c88a5c6b83e0221f1bf4babfe116d93c95a4a0b26b97",
+      "sourceSHA256": "8bace6cd22e400adefcbb93fa8ba84304ac4bf29b9ee28e99d3f2add0027f6ed"
+    },
+    {
+      "index": 3,
+      "rawGenerationSHA256": "2a31814578ba6b339d9d5ce953fa2faabfed3e9c9d51660c6cae3c06924640e3",
+      "reference": "ocean-3.ocp",
+      "referenceSHA256": "db6e9afa36c34267e8cf364b771000e10a0b26c274dffea309a4bab5b18389a5",
+      "sourceSHA256": "5e7481e9e2a0226d5f348c33b4a2836efb2e4f12c2757ebd0c62a17798ecab6e"
+    },
+    {
+      "index": 4,
+      "rawGenerationSHA256": "889fa02d91df58a30386dd6db8fbbadc185aaac54093d65ad63755282104d86c",
+      "reference": "ocean-4.ocp",
+      "referenceSHA256": "9e8fca4dac7589bc916540414fc4ce4c7dd05da7345b410e904617e31a112717",
+      "sourceSHA256": "babb46da3cbf9de0f7fea0ff7419f08e5d6392d278a67ccacc4ae3c9ad930780"
+    },
+    {
+      "index": 5,
+      "rawGenerationSHA256": "c421afe0840c660e7580078c0053886c46edd9645b2d93b68472b42451b9e80a",
+      "reference": "ocean-5.ocp",
+      "referenceSHA256": "3607d544e8be4af987fd12d6fa68d3eb00527e9d1602015d0729d3e93948b545",
+      "sourceSHA256": "0f46a579023ac1eb0455894915549f030f72d9338e60579fbed48c39f906d94b"
+    }
+  ],
+  "cats": {
+    "rawGenerationSHA256": "180dc991d2378faf2e27f9b22cfd1a263c4c031c4ccc5e28db0f0df4beb004df",
+    "sourceSHA256": "6a9d9e4880f7f42b02fd1b7216c7fcc6cba1c9f0d1a73e924a9d8483ebb24fee"
+  }
+}

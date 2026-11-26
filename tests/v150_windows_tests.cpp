@@ -1,0 +1,14 @@
+#include "timer_window.h"
+#include <iostream>
+using namespace pet;
+static void require(bool value,const char*message){if(!value)throw std::runtime_error(message);}
+int wmain(){try{
+ require(secureDllLoading(),"System32 DLL policy");SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_UPDOWN_CLASS|ICC_TAB_CLASSES|ICC_STANDARD_CLASSES};require(InitCommonControlsEx(&controls)!=FALSE,"native controls initialize");
+ auto instance=GetModuleHandleW(nullptr);HWND parent=CreateWindowExW(0,L"STATIC",L"test",WS_OVERLAPPED,0,0,600,500,nullptr,nullptr,instance,nullptr);require(parent!=nullptr,"test parent created");
+ {UITheme theme;theme.sync(parent);NumberWheel hours,minutes;hours.create(parent,instance,200,1,12,12,theme);minutes.create(parent,instance,201,0,59,59,theme);auto input=GetDlgItem(parent,200);require(input&&hours.value()==12,"native hour wheel initial value");SendMessageW(input,WM_KEYDOWN,VK_UP,0);require(hours.value()==1,"keyboard upper wrap");SendMessageW(input,WM_KEYDOWN,VK_DOWN,0);require(hours.value()==12,"keyboard lower wrap");SendMessageW(input,WM_MOUSEWHEEL,MAKEWPARAM(0,WHEEL_DELTA),0);require(hours.value()==1,"mouse wheel wraps");SendMessageW(input,WM_KEYDOWN,VK_END,0);require(hours.value()==12,"keyboard End");SendMessageW(input,WM_KEYDOWN,VK_HOME,0);require(hours.value()==1,"keyboard Home");SendMessageW(GetDlgItem(parent,201),WM_KEYDOWN,VK_UP,0);require(minutes.value()==0,"native minute wheel wraps");SetWindowTextW(input,L"13");bool invalid=false;try{hours.value();}catch(...){invalid=true;}require(invalid,"pasted out-of-range time rejected");
+  HWND edit=CreateWindowExW(0,L"EDIT",L"",WS_CHILD|ES_MULTILINE,0,0,300,100,parent,nullptr,instance,nullptr);for(auto sample:{L"繁體中文 🐾\r\n第二句",L"English 🐾\r\nSecond line",L"日本語 🐾\r\n二つ目"}){SetWindowTextW(edit,sample);require(controlText(edit)==sample&&wide(utf8(controlText(edit)))==sample,"Unicode native edit roundtrip");}DestroyWindow(edit);
+  auto directory=appData()/L"test"/wide(randomId());fs::create_directories(directory);try{Config saved;auto file=directory/L"settings.json";saveConfig(file,saved);auto original=readText(file);for(auto&profile:saved.profiles)for(int lang=0;lang<3;++lang)for(auto state:dialogueStates){Json::Array lines;for(int i=0;i<24;++i)lines.emplace_back(std::to_string(i)+std::string(350,'\t'));profile.setDialogue(Language(lang),state,lines);}bool rejected=false;try{saveConfig(file,saved);}catch(...){rejected=true;}require(rejected&&readText(file)==original,"oversize multilingual settings never replace readable original file");fs::remove_all(directory);}catch(...){std::error_code ec;fs::remove_all(directory,ec);throw;}
+  DestroyWindow(parent);
+ }
+ std::cout<<"PASS native number-wheel keyboard/mouse wrapping, invalid input and Unicode edits\n";return 0;
+ }catch(const std::exception&error){std::cerr<<"FAIL: "<<error.what()<<"\n";return 1;}}

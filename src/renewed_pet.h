@@ -9,11 +9,12 @@ class RenewedPet{
 public:
  int identity()const{return selected;}
  void clear(){image=ImageClip{};selected=-1;active=Action::Idle;started=0;}
- void select(int pet,int coat,const std::vector<unsigned char>&bytes){int next=renewedAppearance(pet,coat);if(next<0)throw std::runtime_error(tr(TextId::BuiltinResourceError));ImageClip decoded;try{decoded=decodeOcean(bytes);}catch(...){throw std::runtime_error(tr(TextId::BuiltinResourceError));}if(decoded.width!=128||decoded.height!=128)throw std::runtime_error(tr(TextId::BuiltinResourceError));image=std::move(decoded);selected=next;active=Action::Idle;started=0;}
+ void select(int pet,int coat,const std::vector<unsigned char>&bytes){int next=renewedAppearance(pet,coat);if(next<0)throw std::runtime_error(tr(TextId::BuiltinResourceError));ImageClip decoded;try{decoded=decodeOcean(bytes);}catch(...){throw std::runtime_error(tr(TextId::BuiltinResourceError));}if(decoded.width!=128||decoded.height!=128||(decoded.frames.size()!=6&&(pet!=0||decoded.frames.size()!=30)))throw std::runtime_error(tr(TextId::BuiltinResourceError));image=std::move(decoded);selected=next;active=Action::Idle;started=0;}
  const ImageClip&clip()const{return image;}
  size_t frame(Action action,uint64_t time){
   if(action!=active){active=action;started=time;}
   auto elapsed=time-started;
+  if(image.frames.size()==30&&(action==Action::Yawn||action==Action::Belly))return (action==Action::Yawn?6u:18u)+size_t(elapsed/100%12);
   switch(action){
    case Action::Blink:case Action::Shy:return 1;
    case Action::Sleep:return 2;

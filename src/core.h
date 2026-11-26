@@ -81,10 +81,12 @@ inline std::string chooseDialogue(const std::vector<std::string>&lines,std::stri
  auto index=eligible.empty()?0:eligible[random%eligible.size()];previous=lines[index];return previous;
 }
 struct CustomProfile{
- std::string name=std::string(tr(TextId::S002,Language::ZhTW));Json files,dialogues;bool dialogueEnabled=true,genericFallback=true;
+ std::string name=std::string(tr(TextId::S002,Language::ZhTW));Json files,dialogues,dialogueLanguages;bool dialogueEnabled=true,genericFallback=true;
+ const Json&dialogueFor(Language language)const{return language==Language::ZhTW?dialogues:dialogueLanguages[languageCode(language)];}
+ void setDialogue(Language language,const std::string&state,const Json&lines){if(language==Language::ZhTW)dialogues[state]=lines;else dialogueLanguages[languageCode(language)][state]=lines;}
  bool ready()const{return customFileName(files["idle"].str());}
- void load(const Json&j,const std::string&fallback){name=clipUtf8(j["name"].str(fallback),120);if(name.empty())name=fallback;dialogueEnabled=j["dialogueEnabled"].boolean(true);genericFallback=j["genericFallback"].boolean(true);dialogues=Json{};for(auto state:dialogueStates){Json::Array lines;for(auto&line:validDialogueList(j["dialogues"][state]))lines.emplace_back(line);dialogues[state]=lines;}files=Json{};for(auto state:customStates){auto file=j["files"][state].str();if(customFileName(file))files[state]=file;}}
- Json json()const{Json j;j["name"]=name;j["files"]=files;j["dialogues"]=dialogues;j["dialogueEnabled"]=dialogueEnabled;j["genericFallback"]=genericFallback;return j;}
+ void load(const Json&j,const std::string&fallback){name=clipUtf8(j["name"].str(fallback),120);if(name.empty())name=fallback;dialogueEnabled=j["dialogueEnabled"].boolean(true);genericFallback=j["genericFallback"].boolean(true);dialogues=Json{};dialogueLanguages=Json{};for(int language=0;language<3;++language){auto code=languageCode(Language(language));const auto&source=j["dialogueLanguages"][code];for(auto state:dialogueStates){const auto&saved=language==0&&!source[state].array()?j["dialogues"][state]:source[state];Json::Array lines;for(auto&line:validDialogueList(saved))lines.emplace_back(line);setDialogue(Language(language),state,lines);}}files=Json{};for(auto state:customStates){auto file=j["files"][state].str();if(customFileName(file))files[state]=file;}}
+ Json json()const{Json j;j["name"]=name;j["files"]=files;j["dialogueLanguages"]=Json::Object{};for(int language=0;language<3;++language)for(auto state:dialogueStates){Json::Array lines;for(auto&line:validDialogueList(dialogueFor(Language(language))[state]))lines.emplace_back(line);if(language==0)j["dialogues"][state]=lines;else if(!lines.empty())j["dialogueLanguages"][languageCode(Language(language))][state]=lines;}j["dialogueEnabled"]=dialogueEnabled;j["genericFallback"]=genericFallback;return j;}
 };
 inline int builtinCoats(int species){return species==4?1:species==5||species==6?3:species==0||species==1||species==3?5:0;}
 struct Config{
@@ -100,8 +102,8 @@ struct Config{
 inline std::vector<std::string> dialogueCandidates(const Config&c,const Json&library,const std::string&state){
  if(!dialogueStateValid(state))return {};
  if(state!="remind"&&!c.dialogueEnabled)return {};
- if(c.pet==2){const auto&profile=c.profiles[size_t(c.activeCustom)];if(state!="remind"&&!profile.dialogueEnabled)return {};auto custom=validDialogueList(profile.dialogues[state]);if(!custom.empty())return custom;if(!profile.genericFallback)return {};}
- auto language=effectiveDialogueLanguage(c.language,c.dialogueLanguage);const Json&pack=language==Language::ZhTW?library:library["languages"][languageCode(language)];
+ if(c.pet==2){const auto&profile=c.profiles[size_t(c.activeCustom)];if(state!="remind"&&!profile.dialogueEnabled)return {};auto custom=validDialogueList(profile.dialogueFor(c.language)[state]);if(!custom.empty())return custom;}
+ auto language=c.pet==2?c.language:effectiveDialogueLanguage(c.language,c.dialogueLanguage);const Json&pack=language==Language::ZhTW?library:library["languages"][languageCode(language)];
  auto lines=validDialogueList(pack[dialogueSpecies(c.pet,c.coat)][state]);if(lines.empty())lines=validDialogueList(pack["generic"][state]);
  if(lines.empty())lines.push_back(tr(state=="remind"?TextId::GenericReminder:TextId::GenericDialogue,language));
  return lines;

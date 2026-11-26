@@ -45,3 +45,10 @@ g++ -std=c++17 -O2 -DNDEBUG -Wall -Wextra -Werror -pedantic -Isrc tests/renewed_
 素材重製階段既有的實際 Linux 結果（本次版本準備未重跑）：新增素材核心 **1,598,110** 項檢查通過，ASan／UBSan 同數通過（此環境不支援 LeakSanitizer，未宣稱漏洩檢查通過）；既有核心 **5,157,782** 項與安全 **4,141** 項通過；128 段 GIF 的透明、循環、時長、邊界及來源雜湊檢查通過。總數包含大量逐像素斷言，不等於獨立情境數。最新安全檔、海洋素材與設定／花色核心逐位元比對保留。
 
 本環境無 CMake、MSVC、Windows SDK、PowerShell 或 Windows 桌面，尚未編譯 Windows EXE／RC 或執行 Windows GUI。實際選單切色、各 DPI 小尺寸、眨眼／睡眠轉換、拖曳／穿透、素材載入／內嵌資源 CTest、更新／回滾及效能仍待 Windows／Actions 驗證；沒有宣稱達到 CPU、記憶體或 15 MB 完整發布目標。
+
+
+## v1.5.0 貓咪局部修正
+
+舊原始 cats.png 的哈欠姿勢已重複畫出兩隻落地前腳，翻肚則只有三個清楚肉球；不是 Win32 合成殘影。新 source/cat-corrections.png 只提供五花色×兩姿勢，正常原圖集不覆寫。各 cat OCP 的第 0／1／2／4 姿勢像素與 v1.4.0 完全一致，第 3／5 姿勢替換為四肢合理版本；後接兩段 12 幀哈欠／翻肚動畫（總 30 幀）。其餘 11 款陸生 OCP、118 段正常 GIF 與全部舊來源雜湊未變。詳細動畫及驗證見 [V150_ANIMATIONS.md](V150_ANIMATIONS.md)。
+
+重新建置本次修正只需 `python tools/Build-V150-Animations.py`，不會寫入狗、鳥、熊貓或正常貓咪 GIF。若維護者刻意重新跑舊完整素材生成器，須接著執行本工具套用修正，再跑素材回歸，不能發布重新帶回六腳的舊姿勢。

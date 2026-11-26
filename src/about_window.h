@@ -2,8 +2,10 @@
 #include "platform.h"
 #include "build_config.h"
 #include <functional>
+#include "ui_theme.h"
 namespace pet {
 class AboutWindow{
+ UITheme theme;
  HWND window=nullptr,icon=nullptr,heading=nullptr,version=nullptr,details=nullptr,project=nullptr,issues=nullptr,history=nullptr,update=nullptr,close=nullptr;
  HFONT font=nullptr,titleFont=nullptr;int dpi=96;std::function<void()>checkUpdate;
  int px(int x)const{return MulDiv(x,dpi,96);}
@@ -25,6 +27,10 @@ class AboutWindow{
  void link(const char*suffix){std::wstring url=wide(std::string(PET_PROJECT_URL)+suffix);if(INT_PTR(ShellExecuteW(window,L"open",url.c_str(),nullptr,nullptr,SW_SHOWNORMAL))<=32)SetWindowTextW(version,tw(TextId::LinkFailed));}
  static LRESULT CALLBACK proc(HWND w,UINT message,WPARAM wp,LPARAM lp){
   auto self=reinterpret_cast<AboutWindow*>(GetWindowLongPtrW(w,GWLP_USERDATA));if(message==WM_NCCREATE){self=static_cast<AboutWindow*>(reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams);self->window=w;SetWindowLongPtrW(w,GWLP_USERDATA,LONG_PTR(self));}if(!self)return DefWindowProcW(w,message,wp,lp);
+  if(message==WM_SETTINGCHANGE||message==WM_THEMECHANGED){self->theme.sync(w);InvalidateRect(w,nullptr,TRUE);return 0;}
+  if(message==WM_ERASEBKGND){RECT r{};GetClientRect(w,&r);FillRect(HDC(wp),&r,self->theme.backBrush);return 1;}
+  if(message==WM_CTLCOLORSTATIC||message==WM_CTLCOLOREDIT||message==WM_CTLCOLORBTN)return LRESULT(self->theme.color(HDC(wp),message==WM_CTLCOLOREDIT));
+  if(message==WM_DRAWITEM){auto item=reinterpret_cast<DRAWITEMSTRUCT*>(lp);self->theme.button(item,controlText(item->hwndItem),item->CtlID==5);return TRUE;}
   if(message==LanguageChanged){self->localize();return 0;}if(message==WM_SIZE){self->layout();return 0;}
   if(message==WM_GETMINMAXINFO){auto limits=reinterpret_cast<MINMAXINFO*>(lp);limits->ptMinTrackSize={self->px(520),self->px(440)};return 0;}
   if(message==WM_DPICHANGED){self->dpi=HIWORD(wp);auto r=reinterpret_cast<RECT*>(lp);SetWindowPos(w,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER);self->layout();return 0;}
@@ -39,9 +45,9 @@ public:
   if(!window){WNDCLASSW wc{};wc.hInstance=instance;wc.lpfnWndProc=proc;wc.lpszClassName=L"DesktopPetAbout";wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);wc.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(1));wc.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&wc);dpi=int(GetDpiForWindow(owner));
    RECT size{0,0,px(600),px(560)};DWORD style=WS_OVERLAPPEDWINDOW;AdjustWindowRectExForDpi(&size,style,FALSE,WS_EX_TOOLWINDOW,dpi);POINT cursor{};GetCursorPos(&cursor);MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromPoint(cursor,MONITOR_DEFAULTTONEAREST),&mi);
    CreateWindowExW(WS_EX_TOOLWINDOW,L"DesktopPetAbout",L"",style,(mi.rcWork.left+mi.rcWork.right-size.right+size.left)/2,(mi.rcWork.top+mi.rcWork.bottom-size.bottom+size.top)/2,size.right-size.left,size.bottom-size.top,owner,nullptr,instance,this);
-   if(!window)throw std::runtime_error(tr(TextId::S247));auto child=[&](const wchar_t*type,DWORD flags,int id=0){return CreateWindowExW(0,type,L"",WS_CHILD|WS_VISIBLE|flags,0,0,1,1,window,reinterpret_cast<HMENU>(INT_PTR(id)),instance,nullptr);};
+   if(!window)throw std::runtime_error(tr(TextId::S247));theme.sync(window);auto child=[&](const wchar_t*type,DWORD flags,int id=0){return CreateWindowExW(0,type,L"",WS_CHILD|WS_VISIBLE|flags,0,0,1,1,window,reinterpret_cast<HMENU>(INT_PTR(id)),instance,nullptr);};
    icon=child(L"STATIC",SS_ICON);SendMessageW(icon,STM_SETICON,WPARAM(LoadIconW(instance,MAKEINTRESOURCEW(1))),0);heading=child(L"STATIC",0);version=child(L"STATIC",0);details=child(L"EDIT",WS_BORDER|WS_TABSTOP|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL);SendMessageW(details,EM_SETLIMITTEXT,32768,0);
-   project=child(L"BUTTON",WS_TABSTOP,1);issues=child(L"BUTTON",WS_TABSTOP,3);history=child(L"BUTTON",WS_TABSTOP,4);update=child(L"BUTTON",WS_TABSTOP,5);close=child(L"BUTTON",WS_TABSTOP|BS_DEFPUSHBUTTON,2);
+   SetWindowTheme(details,L"",L"");project=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,1);issues=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,3);history=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,4);update=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,5);close=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,2);
   }
   localize();ShowWindow(window,SW_SHOW);SetForegroundWindow(window);
  }

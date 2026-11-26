@@ -114,3 +114,14 @@ Actions 的官方 commit 來源見 [安全驗證紀錄](SECURITY_TESTING.md)。�
 Windows 建置及測試後，既有 Package.ps1 會自動產生 `DesktopPet_v1.4.0.zip`（含同名根資料夾）與 `DesktopPet-windows-x64.zip`（原五檔自動更新包），SHA256SUMS.txt 涵蓋兩包；update.json 仍指向自動更新專用包，既有金鑰／簽章／來源證明及 build.yml 不變。
 
 此階段只交付必要的版本／文件修改，未執行建置、測試、簽署打包，未建立 v1.4.0 Tag、提交 Commit 或發布 Release。正式發布前請依上述流程由維護者確認實際 Windows 建置、測試、素材顯示、更新／回滾與 provenance 結果，不能將過去驗證紀錄當成本次建置通過。
+
+
+## v1.5.0 多語台詞及計時介面
+
+開發基準：正式 v1.4.0 Tag 與當時最新 main 皆為 `d9c510071e9db3520654a0e9089d40dedb3fc0d0`。單一版本來源 CMake 更新為 1.5.0，RC、manifest、Updater 及關於版本沿用生成範本。
+
+本次不建立 Tag 或 Release。保留完整最新 build.yml（含兩個 EXE 的 SHA-256 輸出）、完整 SHA 固定 Actions、provenance 產生與驗證、主要／備援正式金鑰及五檔 ZIP 白名單。兩種 ZIP 命名及結構、update.json、ECDSA、DPJ3／DPAPI、交易／回滾均不變，新增 UI、翻譯與動畫資源透過 EXE 更新，不加散裝資源。視覺功能僅增加 Windows 系統 DLL `dwmapi.dll`、`uxtheme.dll`，PE 檢查精確加入這兩項；ASLR／DEP／CFG／GS 與額外 Runtime 拒絕檢查均維持。
+
+發布前依 [本版驗證紀錄](V150_TESTING.md) 完成 Windows Release／CTest、原生控制與 IME／DPI／深淺色實測、v1.4.0 設定遷移與簽署更新回滾、PE 防護及雙 ZIP 敏感資料檢查。此開發增量包不是自動更新包，不能直接掛到 update.json。
+
+本版動畫追加：ocean.rc.in 使用六個 marine-*.ocp；renewed.rc.in 資源 ID／路徑不變，五貓檔含修正姿勢與新增影格。原始來源與 GIF 是開發／人工驗收檔，既有 install／Package.ps1 不將它們加進正式 ZIP，只內嵌主程式。兩種正式 ZIP 都帶同一個 DesktopPet.exe，因此不用修改五檔更新白名單。確認 `v150_animations`、`renewed_embedded`、`ocean_embedded` 及既有所有安全測試後，再依原流程簽署／驗證／打包；本次不執行發布。

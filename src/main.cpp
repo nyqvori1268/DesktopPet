@@ -2,6 +2,7 @@
 #include "sprite.h"
 #include "update.h"
 #include "form.h"
+#include "timer_window.h"
 #include "about_window.h"
 #include "build_config.h"
 #include "custom_pet.h"
@@ -29,7 +30,7 @@ const TextId whaleSharks[]={TextId::WhaleSharkDeep,TextId::WhaleSharkLight,TextI
 struct App{
  HINSTANCE instance;HWND window=nullptr,bubble=nullptr;HANDLE singleton=nullptr;Config c;fs::path config;Json dialogue;UpdateClient updates;UpdateHandoff handoff;PetUpdateWindow updateWindow;AboutWindow aboutWindow;std::mt19937 rng{std::random_device{}()};std::string lastLine;Sprite sprite;CustomPet custom;OceanPet ocean;RenewedPet renewed;Spring spring;Action action=Action::Idle;
  bool speechIsDialogue=false;bool manualHidden=false,fullscreenHidden=false,dragging=false,pressed=false,tracking=false,updating=false,loading=true,manualCheck=false,updateNotified=false,downloadRequested=false,formOpen=false,menuOpen=false,reminderQueued=false;
- POINT down{},lastMouse{},startPos{};int dpi=96,canvas=144,petSize=96,clicks=0,strokes=0,lastDirection=0;ULONGLONG nextUpdateNotice=0,lastInput=0,actionEnd=0,bubbleEnd=0,lastClick=0,lastStroke=0,nextIdle=0,frameTime=0,lastMove=0;std::wstring speech,handoffError;std::string observedStatus;fs::path observedStage;UINT taskbar=0;HDC memory=nullptr;HBITMAP bitmap=nullptr,oldBitmap=nullptr;uint32_t*bits=nullptr;int allocated=0;
+ POINT down{},lastMouse{},startPos{};int dpi=96,canvas=144,petSize=96,clicks=0,strokes=0,lastDirection=0;ULONGLONG nextMarineSpecial=0,nextUpdateNotice=0,lastInput=0,actionEnd=0,bubbleEnd=0,lastClick=0,lastStroke=0,nextIdle=0,frameTime=0,lastMove=0;std::wstring speech,handoffError;std::string observedStatus;fs::path observedStage;UINT taskbar=0;HDC memory=nullptr;HBITMAP bitmap=nullptr,oldBitmap=nullptr;uint32_t*bits=nullptr;int allocated=0;
  explicit App(HINSTANCE i):instance(i){}
  ~App(){if(memory){SelectObject(memory,oldBitmap);DeleteObject(bitmap);DeleteDC(memory);}if(singleton)CloseHandle(singleton);}
  bool hidden()const{return manualHidden||fullscreenHidden;}
@@ -45,13 +46,13 @@ struct App{
  void refreshLanguage(){
   handoffError=wide(currentSystemText(utf8(handoffError)));
   if(c.timer.pending)speech=wide(c.timer.title)+L"\n"+(c.timer.text.empty()?say("remind"):wide(c.timer.text))+L"\n"+tw(TextId::ReminderConfirmHint);
-  else if(!speech.empty()){if(speechIsDialogue&&c.dialogueLanguage=="follow-ui"){lastLine.clear();speech=say(dialogueState());}else if(!speechIsDialogue)speech=wide(currentSystemText(utf8(speech)));}
+  else if(!speech.empty()){if(speechIsDialogue&&(c.pet==2||c.dialogueLanguage=="follow-ui")){lastLine.clear();speech=say(dialogueState());}else if(!speechIsDialogue)speech=wide(currentSystemText(utf8(speech)));}
   tray();placeBubble();
  }
  void changeLanguage(Language language){auto previous=uiLanguage();c.language=supportedLanguage(int(language));setUILanguage(c.language);broadcastLanguageChange(previous);persist();}
  void changeDialogue(const std::string&language){c.dialogueLanguage=language;lastLine.clear();if(speechIsDialogue&&!speech.empty()&&!c.timer.pending){speech=say(dialogueState());placeBubble();}persist();}
  void speak(const std::wstring&s){if(menuOpen||c.timer.pending)return;speechIsDialogue=false;speech=s;bubbleEnd=GetTickCount64()+4000;placeBubble();}
- void interact(Action a,const std::string&state,int ms=2400){if(menuOpen)return;lastInput=GetTickCount64();if(c.timer.pending||dragging)return;action=a;actionEnd=lastInput+(c.pet==2?custom.duration(a,unsigned(ms)):unsigned(ms));speakDialogue(state);scheduleFrame();}
+ void interact(Action a,const std::string&state,int ms=2400){if(menuOpen)return;lastInput=GetTickCount64();if(c.timer.pending||dragging)return;action=a;actionEnd=lastInput+(c.pet==2?custom.duration(a,unsigned(ms)):oceanSpecies(c.pet)?ocean.duration(a,unsigned(ms)):unsigned(ms));speakDialogue(state);scheduleFrame();}
  void reminder(){if(dragging||menuOpen){reminderQueued=true;return;}reminderQueued=false;action=Action::Remind;actionEnd=GetTickCount64()+1800;speechIsDialogue=false;speech=wide(c.timer.title)+L"\n"+(c.timer.text.empty()?say("remind"):wide(c.timer.text))+L"\n"+tw(TextId::ReminderConfirmHint);bubbleEnd=0;placeBubble();tray();scheduleFrame();}
  void acknowledge(){c.timer.acknowledge();speech.clear();action=Action::Happy;actionEnd=GetTickCount64()+1500;ShowWindow(bubble,SW_HIDE);tray();persist();}
  void defer(int min){c.timer.defer(now(),min);reminderQueued=false;bubbleEnd=0;actionEnd=0;speech.clear();ShowWindow(bubble,SW_HIDE);action=Action::Idle;tray();persist();}
@@ -68,7 +69,7 @@ struct App{
  }
  void render(){if(hidden()||!window)return;auto tick=GetTickCount64();double t=tick/1000.;double dt=frameTime?std::min(.04,(tick-frameTime)/1000.):.016;frameTime=tick;if(!dragging)spring.step(dt);loadOcean();loadRenewed();
   if(allocated!=canvas){if(memory){SelectObject(memory,oldBitmap);DeleteObject(bitmap);DeleteDC(memory);}BITMAPINFO bi{};bi.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);bi.bmiHeader.biWidth=canvas;bi.bmiHeader.biHeight=-canvas;bi.bmiHeader.biPlanes=1;bi.bmiHeader.biBitCount=32;bi.bmiHeader.biCompression=BI_RGB;memory=CreateCompatibleDC(nullptr);bitmap=CreateDIBSection(memory,&bi,DIB_RGB_COLORS,reinterpret_cast<void**>(&bits),nullptr,0);if(!bitmap||!memory)throw std::runtime_error(tr(TextId::S060));oldBitmap=static_cast<HBITMAP>(SelectObject(memory,bitmap));allocated=canvas;}
-  std::fill(bits,bits+canvas*canvas,0u);double sx=spring.x,sy=spring.y;if(c.pet==2&&action==Action::Stretch){sx*=1.16;sy*=.85;}if(c.pet==2&&action==Action::Belly){sx*=1.08;sy*=.94;}if(action==Action::Sleep)sy*=.93;
+  std::fill(bits,bits+canvas*canvas,0u);double sx=spring.x,sy=spring.y;if(c.pet==2&&action==Action::Stretch){sx*=1.16;sy*=.85;}if(c.pet==2&&action==Action::Belly){sx*=1.08;sy*=.94;}if(action==Action::Sleep&&!oceanSpecies(c.pet))sy*=.93;
   const ImageClip* image=nullptr;size_t imageFrame=0;bool fallback=false;
   if(c.pet==2&&custom.ready()){
    image=&custom.clip(action,fallback);imageFrame=custom.frame(action,tick);
@@ -81,15 +82,14 @@ struct App{
   }
   if(oceanSpecies(c.pet)){
    image=&ocean.clip();imageFrame=ocean.frame(action,tick);
-   if(action==Action::Sleep)sy*=1.+std::sin(t*1.5)*.012;
-   if(action==Action::Happy||action==Action::Pet)sy*=1.+std::sin(t*(c.pet==5?5.:2.5))*.025;
-   if(action==Action::Angry)sx*=1.+std::sin(t*15)*.015;
+   // Marine flippers, tail, sleep breathing and expressions are authored in each clip.
   }
   if(renewed.identity()>=0){image=&renewed.clip();imageFrame=renewed.frame(action,tick);sy*=1.+std::sin(t*(action==Action::Sleep?1.5:2.5))*.015;if(action==Action::Angry)sx*=1.+std::sin(t*18)*.018;}
   double aspect=image?double(image->crop.w)/image->crop.h:1.;
   int w=std::max(1,int(petSize*sx*std::min(1.,aspect))),h=std::max(1,int(petSize*sy/std::max(1.,aspect))),ox=(canvas-w)/2,oy=(canvas-h)/2;int jump=0;if(action==Action::Remind&&tick<actionEnd)jump=int(std::abs(std::sin((actionEnd-tick)/1800.*3.14159265*3))*petSize*.16);oy-=jump;
   int sway=renewed.identity()>=0&&action!=Action::Sleep?int(std::lround(std::sin(t*2.8)*2.)):0;
-  for(int y=0;y<h;++y){int yy=oy+y;if(yy<0||yy>=canvas)continue;for(int x=0;x<w;++x){int xx=ox+x;if(xx<0||xx>=canvas)continue;bits[yy*canvas+xx]=(oceanSpecies(c.pet)||renewed.identity()>=0)?oceanSample(*image,imageFrame,std::clamp(x*image->width/w-sway*y/h,0,image->width-1),std::min(image->height-1,y*image->height/h)):image?image->sample(imageFrame,image->crop.x+(x+.5)*image->crop.w/w-.5,image->crop.y+(y+.5)*image->crop.h/h-.5):sprite.pixels[std::min(47,y*48/h)*48+std::min(47,x*48/w)];}}
+  if(oceanSpecies(c.pet)||renewed.identity()>=0)blitNativePet(*image,imageFrame,bits,canvas,ox,oy,w,h,sway);
+  else for(int y=0;y<h;++y){int yy=oy+y;if(yy<0||yy>=canvas)continue;for(int x=0;x<w;++x){int xx=ox+x;if(xx<0||xx>=canvas)continue;bits[yy*canvas+xx]=image?image->sample(imageFrame,image->crop.x+(x+.5)*image->crop.w/w-.5,image->crop.y+(y+.5)*image->crop.h/h-.5):sprite.pixels[std::min(47,y*48/h)*48+std::min(47,x*48/w)];}}
   if(image){
    // Shared transparent effects; the imported drawing itself is never pixelized.
    Sprite effect;if(action==Action::Pet||action==Action::Happy||action==Action::Shy){effect.heart(4,5);effect.heart(37,4);}
@@ -139,16 +139,10 @@ struct App{
  bool isFullscreen(){auto w=GetForegroundWindow();if(!w||w==window||w==bubble||w==GetShellWindow()||!IsWindowVisible(w)||IsIconic(w))return false;wchar_t cls[128]{};GetClassNameW(w,cls,128);if(wcscmp(cls,L"Progman")==0||wcscmp(cls,L"WorkerW")==0||wcsstr(cls,L"TrayWnd"))return false;RECT r{};if(!GetWindowRect(w,&r))return false;MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromWindow(w,MONITOR_DEFAULTTONEAREST),&mi);return r.left<=mi.rcMonitor.left+2&&r.top<=mi.rcMonitor.top+2&&r.right>=mi.rcMonitor.right-2&&r.bottom>=mi.rcMonitor.bottom-2;}
  void visibility(){bool was=fullscreenHidden;fullscreenHidden=c.autoHide&&isFullscreen();if(hidden()){ShowWindow(window,SW_HIDE);ShowWindow(bubble,SW_HIDE);KillTimer(window,2);}else{ShowWindow(window,SW_SHOWNOACTIVATE);if(was&&c.timer.pending)reminder();render();placeBubble();scheduleFrame();}}
  void tick(){auto t=GetTickCount64();if(c.timer.tick(now())){lastInput=t;reminder();persist();}visibility();if(updates.busy())tray();if(!menuOpen&&!c.timer.pending&&bubbleEnd&&t>=bubbleEnd){speech.clear();bubbleEnd=0;ShowWindow(bubble,SW_HIDE);}if(c.autoUpdate&&updates.enabled()&&!updates.busy()&&(now()-c.lastCheck>=86400||now()<c.lastCheck)){c.lastCheck=now();updates.check();persist();}if(!menuOpen)updateTick();}
- void animate(){if(menuOpen)return;auto t=GetTickCount64();if(!dragging&&!c.timer.pending){if(t-lastInput>=300000){if(action!=Action::Sleep){action=Action::Sleep;actionEnd=0;speakDialogue("sleep");}}else if(actionEnd&&t>=actionEnd){action=Action::Idle;actionEnd=0;}if(!actionEnd&&action!=Action::Sleep&&t>=nextIdle){static Action idle[]={Action::Blink,Action::Yawn,Action::Stretch,Action::Belly,Action::Happy};action=idle[rng()%5];actionEnd=t+(c.pet==2?custom.duration(action,action==Action::Blink?250u:2300u):(action==Action::Blink?250u:2300u));nextIdle=t+15000+rng()%30000;}}render();scheduleFrame();}
+ void animate(){if(menuOpen)return;auto t=GetTickCount64();if(!dragging&&!c.timer.pending){if(t-lastInput>=300000){if(action!=Action::Sleep){action=Action::Sleep;actionEnd=0;speakDialogue("sleep");}}else if(actionEnd&&t>=actionEnd){action=Action::Idle;actionEnd=0;}if(!actionEnd&&action!=Action::Sleep&&t>=nextIdle){static Action idle[]={Action::Blink,Action::Yawn,Action::Stretch,Action::Belly,Action::Happy};action=idle[rng()%5];if(oceanSpecies(c.pet)&&(action==Action::Yawn||action==Action::Stretch||action==Action::Belly)){if(t<nextMarineSpecial)action=Action::Blink;else nextMarineSpecial=t+90000+rng()%60000;}actionEnd=t+(c.pet==2?custom.duration(action,action==Action::Blink?250u:2300u):oceanSpecies(c.pet)?ocean.duration(action,action==Action::Blink?250u:2300u):(action==Action::Blink?250u:2300u));nextIdle=t+15000+rng()%30000;}}render();scheduleFrame();}
  void applyPass(){auto ex=GetWindowLongPtrW(window,GWL_EXSTYLE);if(c.pass)ex|=WS_EX_TRANSPARENT;else ex&=~LONG_PTR(WS_EX_TRANSPARENT);SetWindowLongPtrW(window,GWL_EXSTYLE,ex);SetWindowLongPtrW(bubble,GWL_EXSTYLE,(GetWindowLongPtrW(bubble,GWL_EXSTYLE)&~LONG_PTR(WS_EX_TRANSPARENT))|(c.pass?WS_EX_TRANSPARENT:0));}
  void showForm(Form&f){if(formOpen)return;formOpen=true;f.show(window,instance);formOpen=false;lastInput=GetTickCount64();}
- void timerForm(Mode mode){Form f;f.titleFactory=[mode]{return std::wstring(tw(mode==Mode::Countdown?TextId::S061:mode==Mode::Interval?TextId::S062:TextId::S063));};int n=std::clamp(c.timer.interval,1,Timer::maxInterval(mode));
-  if(mode==Mode::Alarm){f.fields={{TextId::S064,std::to_wstring(c.timer.alarmHour)},{TextId::S065,std::to_wstring(c.timer.alarmMinute)},{TextId::S066,std::to_wstring(c.timer.repeat),std::vector<TextId>{TextId::S067,TextId::S068,TextId::S069}},{TextId::S070,wide(weekdayText(c.timer.weekdays,c.language))}};
-   f.onLanguage=[&](Language old){auto input=f.fields[3].input;int size=GetWindowTextLengthW(input);std::wstring text(size_t(size)+1,0);GetWindowTextW(input,text.data(),size+1);text.resize(size);int mask=weekdayMask(utf8(text),old);if(mask>=0)SetWindowTextW(input,wide(weekdayText(mask,c.language)).c_str());};}
-  else f.fields={{mode==Mode::Interval?TextId::S072:TextId::S073,std::to_wstring(n/3600)},{TextId::S065,std::to_wstring(n/60%60)},{TextId::S074,std::to_wstring(n%60)}};
-  f.fields.emplace_back(TextId::S075,wide(c.timer.title));f.fields.emplace_back(TextId::S076,wide(c.timer.text));f.fields.back().multiline=true;
-  f.apply=[&,mode](auto&v){Timer temp=c.timer;temp.mode=mode;size_t k;if(mode==Mode::Alarm){temp.alarmHour=number(v[0].value,0,23);temp.alarmMinute=number(v[1].value,0,59);temp.repeat=number(v[2].value,0,2);temp.weekdays=weekdayMask(utf8(v[3].value),c.language);if(temp.weekdays<0)throw std::runtime_error(tr(TextId::InvalidWeekdays));if(!temp.weekdays&&temp.repeat==2)throw std::runtime_error(tr(TextId::S077));if(!temp.weekdays)temp.weekdays=127;k=4;}else{temp.interval=number(v[0].value,0,mode==Mode::Interval?24:168)*3600+number(v[1].value,0,59)*60+number(v[2].value,0,59);if(!temp.validInterval())throw std::runtime_error(mode==Mode::Interval?tr(TextId::S078):tr(TextId::S079));k=3;}temp.title=utf8(v[k].value);temp.text=utf8(v[k+1].value);temp.start(now());c.timer=temp;speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();return true;};showForm(f);
- }
+ void timerForm(Mode mode){if(formOpen)return;formOpen=true;try{TimerWindow editor(c.timer,mode,[&]{reminderQueued=c.timer.pending;speech.clear();bubbleEnd=0;ShowWindow(bubble,SW_HIDE);tray();persist();});editor.show(window,instance);}catch(...){formOpen=false;throw;}formOpen=false;lastInput=GetTickCount64();}
  void oneNumber(TextId title,int value,int lo,int hi,const std::function<void(int)>&save){Form f;f.titleId=title;f.fields.emplace_back(TextId::ValueRange,std::to_wstring(value));f.fields[0].labelFactory=[lo,hi]{return wf(TextId::ValueRange,{std::to_wstring(lo),std::to_wstring(hi)});};f.apply=[&](auto&v){save(number(v[0].value,lo,hi));persist();return true;};showForm(f);}
  void preferences(){Form f;f.titleId=TextId::S081;f.fields={{TextId::S082,c.autoHide?L"1":L"0",true},{TextId::S083,c.startup?L"1":L"0",true},{TextId::S084,c.autoUpdate?L"1":L"0",true},{TextId::S085,std::to_wstring(c.timer.snoozeMinutes)},{TextId::S086,wide(c.skip)}};f.apply=[&](auto&v){int snooze=number(v[3].value,1,1440);bool startup=v[1].value==L"1";setStartup(startup);c.startup=startup;c.autoHide=v[0].value==L"1";c.autoUpdate=v[2].value==L"1";c.timer.snoozeMinutes=snooze;c.skip=utf8(v[4].value);visibility();persist();return true;};showForm(f);}
  void selectPet(int pet){if(!c.selectBuiltin(pet,c.coat))return;ocean.clear();renewed.clear();custom=CustomPet{};lastLine.clear();if(!c.timer.pending){speech.clear();ShowWindow(bubble,SW_HIDE);}render();tray();persist();}
@@ -160,13 +154,16 @@ struct App{
  void editDialogue(int slot){
   const std::vector<TextId>states={TextId::DialogueGeneral,TextId::DialogueHappy,TextId::DialoguePet,TextId::DialogueAngry,TextId::DialogueDrag,TextId::DialogueSleep,TextId::DialogueWake,TextId::DialogueRemind};
   Form settings;settings.titleId=TextId::EditDialogue;auto&profile=c.profiles[size_t(slot)];int selected=-1;
-  settings.fields.emplace_back(TextId::DialogueState,L"0",states);settings.fields.emplace_back(TextId::DialogueEnabled,profile.dialogueEnabled?L"1":L"0",true);settings.fields.emplace_back(TextId::GenericFallback,profile.genericFallback?L"1":L"0",true);
-  settings.apply=[&](auto&fields){selected=number(fields[0].value,0,7);profile.dialogueEnabled=fields[1].value==L"1";profile.genericFallback=fields[2].value==L"1";if(c.pet==2&&c.activeCustom==slot&&!c.timer.pending){speech.clear();ShowWindow(bubble,SW_HIDE);}persist();return true;};showForm(settings);if(selected<0)return;
-  const auto state=dialogueStates[size_t(selected)];std::string lines;for(auto&line:validDialogueList(profile.dialogues[state])){if(!lines.empty())lines+="\r\n";lines+=line;}
-  Form editor;editor.titleId=TextId::EditDialogue;editor.fields.emplace_back(TextId::DialogueLines,wide(lines));editor.fields[0].multiline=true;editor.fields[0].textLimit=9000;editor.fields[0].multilineHeight=210;
-  editor.preview=[&]{HWND input=editor.fields[0].input;int n=GetWindowTextLengthW(input);std::wstring value(size_t(n)+1,0);GetWindowTextW(input,value.data(),n+1);value.resize(n);auto candidates=dialogueLines(utf8(value),true);auto preview=chooseDialogue(candidates,lastLine,rng());localizedMessage(editor.hwnd,instance,TextId::Preview,[preview]{return preview.empty()?std::wstring(tw(TextId::EmptyPreview)):wide(preview);},false);};
-  editor.apply=[&](auto&fields){Json::Array lines;for(auto&line:dialogueLines(utf8(fields[0].value),true))lines.emplace_back(line);profile.dialogues[state]=lines;lastLine.clear();if(c.pet==2&&c.activeCustom==slot&&!c.timer.pending){speech.clear();ShowWindow(bubble,SW_HIDE);}persist();return true;};showForm(editor);
+  settings.fields.emplace_back(TextId::DialogueState,L"0",states);settings.fields.emplace_back(TextId::DialogueEnabled,profile.dialogueEnabled?L"1":L"0",true);
+  settings.apply=[&](auto&fields){selected=number(fields[0].value,0,7);profile.dialogueEnabled=fields[1].value==L"1";if(c.pet==2&&c.activeCustom==slot&&!c.timer.pending){speech.clear();ShowWindow(bubble,SW_HIDE);}persist();return true;};showForm(settings);if(selected<0)return;
+  const auto state=dialogueStates[size_t(selected)];std::array<std::wstring,3>buffers;
+  for(int language=0;language<3;++language){std::string lines;for(auto&line:validDialogueList(profile.dialogueFor(Language(language))[state])){if(!lines.empty())lines+="\r\n";lines+=line;}buffers[size_t(language)]=wide(lines);}
+  Form editor;editor.titleId=TextId::EditDialogue;editor.tabIds={TextId::ZhTW,TextId::EnUS,TextId::JaJP};editor.selectedTab=int(c.language);editor.fields.emplace_back(TextId::DialogueEditLanguage,buffers[size_t(c.language)]);editor.fields[0].multiline=true;editor.fields[0].textLimit=9000;editor.fields[0].multilineHeight=230;
+  editor.onTab=[&](int previous,int next){buffers[size_t(previous)]=controlText(editor.fields[0].input);SetWindowTextW(editor.fields[0].input,buffers[size_t(next)].c_str());};
+  editor.preview=[&]{editor.completeIME();auto candidates=dialogueLines(utf8(controlText(editor.fields[0].input)),true);if(candidates.empty()){Config previewConfig=c;previewConfig.pet=2;previewConfig.activeCustom=slot;previewConfig.language=Language(editor.selectedTab);previewConfig.dialogueEnabled=true;previewConfig.profiles[size_t(slot)].dialogueEnabled=true;previewConfig.profiles[size_t(slot)].setDialogue(previewConfig.language,state,Json::Array{});candidates=dialogueCandidates(previewConfig,dialogue,state);}auto preview=chooseDialogue(candidates,lastLine,rng());localizedMessage(editor.hwnd,instance,TextId::Preview,[preview]{return wide(preview);},false);};
+  editor.apply=[&](auto&fields){buffers[size_t(editor.selectedTab)]=fields[0].value;auto candidate=profile;for(int language=0;language<3;++language){Json::Array lines;for(auto&line:dialogueLines(utf8(buffers[size_t(language)]),true))lines.emplace_back(line);candidate.setDialogue(Language(language),state,lines);}Config staged=c;staged.profiles[size_t(slot)]=candidate;if(staged.json().dump().size()>1024*1024-8192)throw std::runtime_error(tr(TextId::DialogueCapacity));profile=std::move(candidate);lastLine.clear();if(c.pet==2&&c.activeCustom==slot&&!c.timer.pending){speech.clear();ShowWindow(bubble,SW_HIDE);}persist();return true;};showForm(editor);
  }
+
  void renameProfile(int slot){
   Form f;f.titleFactory=[slot]{return wf(TextId::ProfileTitle,{std::to_wstring(slot+1)});};f.fields.emplace_back(TextId::S089,wide(c.profiles[size_t(slot)].name));
   f.apply=[&](auto&fields){auto value=fields[0].value;if(value.empty()||value.size()>30)throw std::runtime_error(tr(TextId::S090));c.profiles[size_t(slot)].name=utf8(value);if(c.pet==2&&c.activeCustom==slot)c.name=utf8(value);tray();persist();return true;};showForm(f);
@@ -264,7 +261,7 @@ struct App{
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int){
  if(!secureDllLoading())return 1;
- SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES|ICC_PROGRESS_CLASS};InitCommonControlsEx(&controls);CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+ SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES|ICC_PROGRESS_CLASS|ICC_UPDOWN_CLASS|ICC_TAB_CLASSES};InitCommonControlsEx(&controls);CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
  int argc=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&argc);if(argc==5&&wcscmp(argv[1],L"--verify-update")==0){int result=0;try{auto info=verifyManifest(readBytes(argv[2],65536),readBytes(argv[3],64));auto bytes=readBytes(argv[4],15*1024*1024);auto metadata=Json::parse(std::string(info.manifest.begin(),info.manifest.end()));if(bytes.size()!=info.size||sha256(bytes)!=metadata["sha256"].str())throw std::runtime_error(tr(TextId::S175));inspectZip(bytes);}catch(...){result=1;}LocalFree(argv);CoUninitialize();return result;}if(argc==4&&wcscmp(argv[1],L"--adopt-update-trust")==0){int result=0;try{commitInstalledTrust(readBytes(argv[2],65536),readBytes(argv[3],64),PET_VERSION);}catch(...){result=1;}LocalFree(argv);CoUninitialize();return result;}bool restore=argc>1&&wcscmp(argv[1],L"--updated")==0;std::wstring eventName=restore&&argc>2?argv[2]:L"";LocalFree(argv);
  try{
   auto dir=executable().parent_path();if(!restore&&fs::exists(dir/L".desktoppet-transaction.json")){loadTransaction(dir);auto temp=appData()/L"updaters"/wide(randomId());fs::create_directories(temp);auto b=readUpdateFile(dir/L"Updater.exe");atomicWrite(temp/L"Updater.exe",b.data(),b.size());auto pi=launch(temp/L"Updater.exe",{L"--recover",dir.wstring()});CloseHandle(pi.hProcess);CloseHandle(pi.hThread);return 0;}

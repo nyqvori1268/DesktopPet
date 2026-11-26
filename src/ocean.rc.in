@@ -1,7 +1,7 @@
 // Compiled into DesktopPet.exe only, so the existing five-file updater is unchanged.
-201 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/ocean-0.ocp"
-202 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/ocean-1.ocp"
-203 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/ocean-2.ocp"
-204 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/ocean-3.ocp"
-205 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/ocean-4.ocp"
-206 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/ocean-5.ocp"
+201 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/marine-0.ocp"
+202 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/marine-1.ocp"
+203 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/marine-2.ocp"
+204 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/marine-3.ocp"
+205 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/marine-4.ocp"
+206 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/ocean/marine-5.ocp"

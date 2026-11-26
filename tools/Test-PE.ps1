@@ -33,7 +33,7 @@ foreach ($file in $Path) {
   while ($end -lt $b.Length -and $b[$end]) { $end++;if ($end-$nameOffset -gt 256) { throw 'Invalid DLL name.' } }
   if ($end -eq $b.Length) { throw 'Truncated DLL name.' }
   $name=[Text.Encoding]::ASCII.GetString($b,[int]$nameOffset,[int]($end-$nameOffset));$dlls+=$name
-  if ($name -notmatch '(?i)^(kernel32|user32|gdi32|shell32|ole32|oleaut32|advapi32|winhttp|crypt32|bcrypt|comdlg32|comctl32|gdiplus|shlwapi|version|imm32|ntdll|secur32|ws2_32|rpcrt4|api-ms-win-[a-z0-9-]+|ext-ms-win-[a-z0-9-]+)\.dll$') { throw "Non-allowlisted runtime DLL: $name" }
+  if ($name -notmatch '(?i)^(kernel32|user32|gdi32|shell32|ole32|oleaut32|advapi32|winhttp|crypt32|bcrypt|comdlg32|comctl32|gdiplus|dwmapi|uxtheme|shlwapi|version|imm32|ntdll|secur32|ws2_32|rpcrt4|api-ms-win-[a-z0-9-]+|ext-ms-win-[a-z0-9-]+)\.dll$') { throw "Non-allowlisted runtime DLL: $name" }
   $descriptor+=20
  }
  if ($n -eq 256) { throw 'Unterminated import table.' }
