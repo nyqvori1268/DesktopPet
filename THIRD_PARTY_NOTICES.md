@@ -23,3 +23,5 @@ executable; source hashes and crop coordinates are recorded in
 assets/ocean/provenance.json. Existing procedural pet artwork is unchanged.
 Pillow is an optional developer-only conversion tool, not a runtime dependency
 and not bundled in either distribution. See docs/OCEAN_PETS.md.
+
+The renewed cat/dog/budgie/cockatiel/panda atlases are original project artwork generated for this task with the built-in image generation tool; no web or licensed character artwork was imported. They remain covered by the project MIT license. Retained source atlases and prompt specifications are in assets/renewed/source; Pillow remains a developer-only conversion dependency.

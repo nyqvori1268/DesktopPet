@@ -1,0 +1,434 @@
+[
+  {
+    "pet": 0,
+    "coat": 0,
+    "resource": 301,
+    "file": "pet-0-0.ocp",
+    "source": "source/cats.png",
+    "sourceSHA256": "67734979c6417f3bd34f801ad1a0a75ef529bd1d6eb96b16a192dac463727e9a",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      224451807,
+      2563989290,
+      2891546845,
+      1811462931,
+      3167295209,
+      678561980
+    ],
+    "bytes": 38869
+  },
+  {
+    "pet": 0,
+    "coat": 1,
+    "resource": 302,
+    "file": "pet-0-1.ocp",
+    "source": "source/cats.png",
+    "sourceSHA256": "67734979c6417f3bd34f801ad1a0a75ef529bd1d6eb96b16a192dac463727e9a",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      964858558,
+      777119329,
+      1727808538,
+      68562129,
+      1584036257,
+      2123254026
+    ],
+    "bytes": 40481
+  },
+  {
+    "pet": 0,
+    "coat": 2,
+    "resource": 303,
+    "file": "pet-0-2.ocp",
+    "source": "source/cats.png",
+    "sourceSHA256": "67734979c6417f3bd34f801ad1a0a75ef529bd1d6eb96b16a192dac463727e9a",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      3479810426,
+      695168347,
+      2170308250,
+      3077553815,
+      2714148640,
+      826568981
+    ],
+    "bytes": 31569
+  },
+  {
+    "pet": 0,
+    "coat": 3,
+    "resource": 304,
+    "file": "pet-0-3.ocp",
+    "source": "source/cats.png",
+    "sourceSHA256": "67734979c6417f3bd34f801ad1a0a75ef529bd1d6eb96b16a192dac463727e9a",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      1838240783,
+      3579946458,
+      2456068211,
+      2695764127,
+      1207240144,
+      890920764
+    ],
+    "bytes": 33988
+  },
+  {
+    "pet": 0,
+    "coat": 4,
+    "resource": 305,
+    "file": "pet-0-4.ocp",
+    "source": "source/cats.png",
+    "sourceSHA256": "67734979c6417f3bd34f801ad1a0a75ef529bd1d6eb96b16a192dac463727e9a",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      3105037486,
+      1539751726,
+      1709037788,
+      1592249973,
+      2857144806,
+      3847682714
+    ],
+    "bytes": 39897
+  },
+  {
+    "pet": 1,
+    "coat": 0,
+    "resource": 306,
+    "file": "pet-1-0.ocp",
+    "source": "source/dogs.png",
+    "sourceSHA256": "e2bf64dbb7673e8d2c21992f06399b920cd4aa10614a9ced885eda7c81d20587",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      3921414934,
+      3446672473,
+      1717629352,
+      1441260957,
+      1133214309,
+      2775823176
+    ],
+    "bytes": 28100
+  },
+  {
+    "pet": 1,
+    "coat": 1,
+    "resource": 307,
+    "file": "pet-1-1.ocp",
+    "source": "source/dogs.png",
+    "sourceSHA256": "e2bf64dbb7673e8d2c21992f06399b920cd4aa10614a9ced885eda7c81d20587",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      3616255887,
+      479109398,
+      3582567600,
+      3683006588,
+      126367445,
+      242471055
+    ],
+    "bytes": 30370
+  },
+  {
+    "pet": 1,
+    "coat": 2,
+    "resource": 308,
+    "file": "pet-1-2.ocp",
+    "source": "source/dogs.png",
+    "sourceSHA256": "e2bf64dbb7673e8d2c21992f06399b920cd4aa10614a9ced885eda7c81d20587",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      1751129924,
+      2399001198,
+      1941462769,
+      1535839084,
+      966669070,
+      3645377627
+    ],
+    "bytes": 34081
+  },
+  {
+    "pet": 1,
+    "coat": 3,
+    "resource": 309,
+    "file": "pet-1-3.ocp",
+    "source": "source/dogs.png",
+    "sourceSHA256": "e2bf64dbb7673e8d2c21992f06399b920cd4aa10614a9ced885eda7c81d20587",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      3600438811,
+      2054767513,
+      1717680979,
+      1366974735,
+      3757065965,
+      1855102763
+    ],
+    "bytes": 33080
+  },
+  {
+    "pet": 1,
+    "coat": 4,
+    "resource": 310,
+    "file": "pet-1-4.ocp",
+    "source": "source/dogs.png",
+    "sourceSHA256": "e2bf64dbb7673e8d2c21992f06399b920cd4aa10614a9ced885eda7c81d20587",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      1875189345,
+      783121254,
+      3237095935,
+      686552223,
+      3638617944,
+      2147556883
+    ],
+    "bytes": 30799
+  },
+  {
+    "pet": 3,
+    "coat": 0,
+    "resource": 311,
+    "file": "pet-3-0.ocp",
+    "source": "source/birds.png",
+    "sourceSHA256": "87f3fe71562e6ff10b8868579a326a243d59a037c753df289c7eb4d465bb7adf",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "wing-flap"
+    ],
+    "argbCRC32": [
+      419575966,
+      2320126210,
+      579438241,
+      2118077828,
+      1208791785,
+      2824514245
+    ],
+    "bytes": 37404
+  },
+  {
+    "pet": 3,
+    "coat": 1,
+    "resource": 312,
+    "file": "pet-3-1.ocp",
+    "source": "source/birds.png",
+    "sourceSHA256": "87f3fe71562e6ff10b8868579a326a243d59a037c753df289c7eb4d465bb7adf",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "wing-flap"
+    ],
+    "argbCRC32": [
+      2761390924,
+      1962609236,
+      3381454773,
+      1913260828,
+      3316222588,
+      3706087042
+    ],
+    "bytes": 33974
+  },
+  {
+    "pet": 3,
+    "coat": 2,
+    "resource": 313,
+    "file": "pet-3-2.ocp",
+    "source": "source/birds.png",
+    "sourceSHA256": "87f3fe71562e6ff10b8868579a326a243d59a037c753df289c7eb4d465bb7adf",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "wing-flap"
+    ],
+    "argbCRC32": [
+      643495043,
+      2703990305,
+      2631101596,
+      2373246363,
+      3430796189,
+      182967666
+    ],
+    "bytes": 32814
+  },
+  {
+    "pet": 3,
+    "coat": 3,
+    "resource": 314,
+    "file": "pet-3-3.ocp",
+    "source": "source/birds.png",
+    "sourceSHA256": "87f3fe71562e6ff10b8868579a326a243d59a037c753df289c7eb4d465bb7adf",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "wing-flap"
+    ],
+    "argbCRC32": [
+      1901002533,
+      425232677,
+      990476307,
+      2350464384,
+      4274254855,
+      3183561278
+    ],
+    "bytes": 29980
+  },
+  {
+    "pet": 3,
+    "coat": 4,
+    "resource": 315,
+    "file": "pet-3-4.ocp",
+    "source": "source/birds.png",
+    "sourceSHA256": "87f3fe71562e6ff10b8868579a326a243d59a037c753df289c7eb4d465bb7adf",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "wing-flap"
+    ],
+    "argbCRC32": [
+      3429243094,
+      2888031485,
+      676305738,
+      3690688821,
+      2522601770,
+      2623651096
+    ],
+    "bytes": 30180
+  },
+  {
+    "pet": 4,
+    "coat": 0,
+    "resource": 316,
+    "file": "pet-4-0.ocp",
+    "source": "source/panda.png",
+    "sourceSHA256": "8f5e1919989f53aa03145d02dc71c3647162295a969b46fcc0c1efe127c28aab",
+    "width": 128,
+    "height": 128,
+    "poses": [
+      "idle",
+      "blink",
+      "sleep",
+      "yawn",
+      "stretch",
+      "belly"
+    ],
+    "argbCRC32": [
+      502521102,
+      2580730558,
+      27564666,
+      3603356333,
+      1730224454,
+      434390855
+    ],
+    "bytes": 35758
+  }
+]

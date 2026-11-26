@@ -1,0 +1,18 @@
+#pragma code_page(65001)
+// Existing pet/coat IDs map to an indexed, embedded appearance.
+301 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-0-0.ocp"
+302 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-0-1.ocp"
+303 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-0-2.ocp"
+304 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-0-3.ocp"
+305 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-0-4.ocp"
+306 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-1-0.ocp"
+307 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-1-1.ocp"
+308 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-1-2.ocp"
+309 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-1-3.ocp"
+310 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-1-4.ocp"
+311 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-3-0.ocp"
+312 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-3-1.ocp"
+313 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-3-2.ocp"
+314 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-3-3.ocp"
+315 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-3-4.ocp"
+316 RCDATA "@CMAKE_CURRENT_SOURCE_DIR@/assets/renewed/pet-4-0.ocp"

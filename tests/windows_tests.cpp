@@ -3,6 +3,7 @@
 #include "zip.h"
 #include "custom_pet.h"
 #include "ocean.h"
+#include "renewed_pet.h"
 #include "handoff.h"
 #include "update_logic.h"
 #include "trust_store.h"
@@ -54,6 +55,12 @@ static void transactionFilesystemTests(){
 }
 int wmain(int argc,wchar_t**argv){try{
  require(secureDllLoading(),"System32 DLL policy");
+ if(argc==3&&std::wstring(argv[1])==L"--renewed-resources"){
+  HMODULE module=LoadLibraryExW(argv[2],nullptr,LOAD_LIBRARY_AS_DATAFILE|LOAD_LIBRARY_AS_IMAGE_RESOURCE);require(module!=nullptr,"built DesktopPet loads as data only");
+  try{for(int pet:{0,1,3,4})for(int coat=0;coat<builtinCoats(pet);++coat){int index=renewedAppearance(pet,coat);auto resource=FindResourceW(module,MAKEINTRESOURCEW(301+index),RT_RCDATA);require(resource!=nullptr,"all sixteen original coat IDs have renewed resources");auto loaded=LoadResource(module,resource);auto bytes=static_cast<const unsigned char*>(LockResource(loaded));auto size=SizeofResource(module,resource);require(bytes&&size,"renewed resource bytes available");std::vector<unsigned char>data(bytes,bytes+size);RenewedPet art;art.select(pet,coat,data);require(art.clip().frames.size()==6,"all six native poses available");auto original=readBytes(fs::path(PET_TEST_FIXTURES).parent_path().parent_path()/L"assets"/L"renewed"/(L"pet-"+std::to_wstring(pet)+L"-"+std::to_wstring(coat)+L".ocp"));require(sha256(data)==sha256(original),"embedded art matches the selected coat source exactly");}}
+  catch(...){FreeLibrary(module);throw;}FreeLibrary(module);std::cout<<"PASS sixteen embedded renewed appearances, original coat IDs and native poses\n";return 0;
+ }
+
  if(argc==3&&std::wstring(argv[1])==L"--dll-policy"){
   auto dir=appData()/L"test"/wide(randomId());fs::create_directories(dir);auto name=L"DesktopPetProbe-"+wide(randomId())+L".dll";auto file=dir/name;fs::copy_file(argv[2],file);auto previous=fs::current_path();
   try{HMODULE module=LoadLibraryExW(file.c_str(),nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32);require(module!=nullptr,"absolute benign fixture DLL is valid");auto probe=reinterpret_cast<int(*)()>(GetProcAddress(module,"DesktopPetProbe"));require(probe&&probe()==130,"benign fixture export callable");FreeLibrary(module);fs::current_path(dir);module=LoadLibraryW(name.c_str());if(module)FreeLibrary(module);require(!module,"current-directory DLL planting is blocked by actual loader policy");fs::current_path(previous);fs::remove_all(dir);}catch(...){fs::current_path(previous);std::error_code ec;fs::remove_all(dir,ec);throw;}std::cout<<"PASS valid absolute test DLL loads but current-directory planting is refused\n";return 0;
