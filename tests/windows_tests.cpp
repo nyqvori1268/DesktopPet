@@ -2,6 +2,7 @@
 #include "update.h"
 #include "zip.h"
 #include "custom_pet.h"
+#include "ocean.h"
 #include "handoff.h"
 #include "update_logic.h"
 #include "trust_store.h"
@@ -24,6 +25,12 @@ static void trustCryptoTests(){
  std::cout<<"PASS native ECDSA trust-policy authorization, backup rotation and revocation\n";
 }
 int wmain(int argc,wchar_t**argv){try{
+ if(argc==3&&std::wstring(argv[1])==L"--ocean-resources"){
+  HMODULE module=LoadLibraryExW(argv[2],nullptr,LOAD_LIBRARY_AS_DATAFILE|LOAD_LIBRARY_AS_IMAGE_RESOURCE);require(module!=nullptr,"built DesktopPet loads as data only");
+  try{for(int i=0;i<6;++i){auto resource=FindResourceW(module,MAKEINTRESOURCEW(201+i),RT_RCDATA);require(resource!=nullptr,"all six marine resources linked into executable");auto loaded=LoadResource(module,resource);auto bytes=static_cast<const unsigned char*>(LockResource(loaded));auto size=SizeofResource(module,resource);require(bytes&&size,"resource bytes available");std::vector<unsigned char>data(bytes,bytes+size);auto clip=decodeOcean(data);require(clip.frames.size()==6,"embedded native ocean decoding");auto original=readBytes(fs::path(PET_TEST_FIXTURES).parent_path().parent_path()/L"assets"/L"ocean"/(L"ocean-"+std::to_wstring(i)+L".ocp"));require(sha256(data)==sha256(original),"resource exactly matches verified source asset");}}
+  catch(...){FreeLibrary(module);throw;}FreeLibrary(module);std::cout<<"PASS six embedded ocean resources, exact payloads and native decoding\n";return 0;
+ }
+
  if((argc==9||argc==11)&&std::wstring(argv[1])==L"--handoff"){
   if(argc==11)require(std::wstring(argv[9])==L"--language"&&std::wstring(argv[10])==wide(languageCode(uiLanguage())),"optional locale preserves legacy handoff arguments");
   if(fs::path(argv[2]).filename()==L"exit-before-ready")return 4;

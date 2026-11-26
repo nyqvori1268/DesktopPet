@@ -314,6 +314,74 @@
      "Chirp! A crest-up reminder: it’s time.",
      "A little flap so you won’t miss your plan."
     ]
+   },
+   "dolphin": {
+    "general": [
+     "Eee! Ready to have some fun together?",
+     "A little fin wave, and here comes a smile."
+    ],
+    "happy": [
+     "I’m so happy I could leap out of the water!",
+     "You’re here! I can’t keep my tail still!"
+    ],
+    "pet": [
+     "A gentle forehead rub feels lovely.",
+     "Stay a little longer? Eee!"
+    ],
+    "angry": [
+     "Pff! Even dolphins need a little space.",
+     "Let me blow a bubble and cool down."
+    ],
+    "drag": [
+     "Whee! Riding a little wave in the air!",
+     "Set me down gently. I’m aiming for a graceful landing."
+    ],
+    "sleep": [
+     "Drifting gently. Let’s play again in my dreams.",
+     "Eee… saving today’s happy moments for later."
+    ],
+    "wake": [
+     "Eee! This dolphin is ready to go!",
+     "A tail flick, and a fresh wave of fun."
+    ],
+    "remind": [
+     "Eee eee! It’s the time you planned for.",
+     "Surfacing with a reminder: time for a change of pace!"
+    ]
+   },
+   "whaleshark": {
+    "general": [
+     "I’ll swim slowly and keep you company.",
+     "My little white spots are today’s tiny stars."
+    ],
+    "happy": [
+     "Hehe. The current feels just right today.",
+     "We can take our time being happy, right?"
+    ],
+    "pet": [
+     "That gentle touch feels like a soft current.",
+     "A little longer? I’m still enjoying this."
+    ],
+    "angry": [
+     "Hmm… let me drift quietly for a moment.",
+     "That’s a bit too fast. Can we slow down?"
+    ],
+    "drag": [
+     "Oh? How did I swim into the air?",
+     "No rush. Just set me down gently."
+    ],
+    "sleep": [
+     "Tucking today’s little stars into my dreams.",
+     "Zzz… drifting slowly into sleep."
+    ],
+    "wake": [
+     "Hmm, I’m awake. Let’s ease back into the day.",
+     "My little white spots are awake. So am I."
+    ],
+    "remind": [
+     "It’s time. No rush. I’m here with you.",
+     "A gentle swim over to remind you of your plan."
+    ]
    }
   },
   "ja-JP": {
@@ -524,6 +592,74 @@
      "ピッ！冠羽からのお知らせ、時間だよ。",
      "ぱたぱた！予定を忘れないでね。"
     ]
+   },
+   "dolphin": {
+    "general": [
+     "キュー！今日も一緒に遊ぼう！",
+     "ひれをぱたぱた、笑顔を届けるよ。"
+    ],
+    "happy": [
+     "うれしくて、水面から跳び出しちゃいそう！",
+     "会えた！しっぽが止まらないよ！"
+    ],
+    "pet": [
+     "おでこをなでてもらうの、大好き。",
+     "もう少しそばにいてね、キュー！"
+    ],
+    "angry": [
+     "ぷう！イルカにも、ひと息つく時間がほしいな。",
+     "泡をぷくっと出して、落ち着こう。"
+    ],
+    "drag": [
+     "わーい！空の波に乗ってるみたい！",
+     "そっと下ろしてね。かっこよく着地したいな。"
+    ],
+    "sleep": [
+     "ゆらゆら……夢の中でも一緒に遊ぼう。",
+     "キュー……今日の楽しかったこと、覚えておこう。"
+    ],
+    "wake": [
+     "キュー！元気いっぱいになったよ！",
+     "しっぽを振って、また楽しい時間の始まり！"
+    ],
+    "remind": [
+     "キューキュー！決めていた時間だよ。",
+     "浮かんでお知らせ！そろそろ気分を変えてみよう。"
+    ]
+   },
+   "whaleshark": {
+    "general": [
+     "ゆっくり泳いで、ゆっくりそばにいるね。",
+     "白い水玉は、今日の小さなお星さま。"
+    ],
+    "happy": [
+     "えへへ。今日は水の流れがちょうどいいね。",
+     "うれしい時間も、のんびり味わおうね。"
+    ],
+    "pet": [
+     "やさしくなでると、穏やかな水の流れみたい。",
+     "もう少しだけ。この気持ちよさを味わいたいな。"
+    ],
+    "angry": [
+     "うーん……少し静かに漂わせてね。",
+     "流れが速いよ。もう少しゆっくりにしない？"
+    ],
+    "drag": [
+     "あれ？空まで泳いできちゃった？",
+     "急がなくていいよ。そっと下ろしてね。"
+    ],
+    "sleep": [
+     "今日のお星さまを、夢の中にしまおう。",
+     "すう……ゆっくり漂って、おやすみ。"
+    ],
+    "wake": [
+     "ふあ、起きたよ。またゆっくり始めよう。",
+     "白い水玉も目を覚ましたし、準備できたよ。"
+    ],
+    "remind": [
+     "時間だよ。焦らなくていいよ、そばにいるから。",
+     "のんびり泳いで、予定をお知らせしに来たよ。"
+    ]
    }
   }
  },
@@ -627,6 +763,74 @@
   "remind": [
    "啾！頭冠提醒：時間到了。",
    "拍拍翅膀，別忘了你的約定。"
+  ]
+ },
+ "dolphin": {
+  "general": [
+   "吱～今天也想和你一起玩！",
+   "小鰭拍拍，快樂就游過來了。"
+  ],
+  "happy": [
+   "開心得想躍出水面！",
+   "你一出現，我的尾巴就停不下來！"
+  ],
+  "pet": [
+   "摸摸額頭，好舒服～",
+   "再陪我一下嘛，吱！"
+  ],
+  "angry": [
+   "噗！小海豚也需要一點空間。",
+   "先讓我吐個泡泡冷靜一下。"
+  ],
+  "drag": [
+   "嗚呼～空中的小浪花！",
+   "請輕輕放下，我還想優雅降落。"
+  ],
+  "sleep": [
+   "慢慢漂著，夢裡再一起玩。",
+   "吱……今天的快樂先存起來。"
+  ],
+  "wake": [
+   "吱！小海豚充飽精神啦！",
+   "甩甩尾巴，新的快樂要來囉。"
+  ],
+  "remind": [
+   "吱吱！你約好的時間到囉。",
+   "小海豚浮上來提醒你，該換個節奏啦！"
+  ]
+ },
+ "whaleshark": {
+  "general": [
+   "慢慢游，也能慢慢陪著你。",
+   "身上的小白點，是今天的小星星。"
+  ],
+  "happy": [
+   "嘿嘿，今天的水流剛剛好。",
+   "開心也可以慢慢來，對吧？"
+  ],
+  "pet": [
+   "輕輕摸摸，好像溫柔的水流。",
+   "再一下下，我還沒舒服完呢。"
+  ],
+  "angry": [
+   "唔……先讓我安靜漂一下。",
+   "水流太急啦，慢一點好不好？"
+  ],
+  "drag": [
+   "咦，我怎麼游到空中了？",
+   "不用急，輕輕放我下來就好。"
+  ],
+  "sleep": [
+   "把今天的星星收進夢裡。",
+   "呼……慢慢漂，慢慢睡。"
+  ],
+  "wake": [
+   "唔，醒了，再慢慢開始吧。",
+   "小白點都醒來了，我也準備好了。"
+  ],
+  "remind": [
+   "時間到囉，不急，我陪你。",
+   "小鯨鯊慢慢游來，提醒你的約定。"
   ]
  }
 }

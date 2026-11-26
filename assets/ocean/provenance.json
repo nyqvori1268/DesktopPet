@@ -1,0 +1,320 @@
+[
+  {
+    "source": "A1_Dolphin_ClassicBlue.gif",
+    "sha256": "3a8bb4224e18d727effc3b7c67111a73c86cde97b970ec45cc9c56483c137ac2",
+    "resource": "ocean-0.ocp",
+    "sourceSize": [
+      418,
+      627
+    ],
+    "crop": [
+      30,
+      98,
+      379,
+      558
+    ],
+    "size": [
+      349,
+      460
+    ],
+    "frames": 6,
+    "delays": [
+      180,
+      180,
+      180,
+      180,
+      180,
+      180
+    ],
+    "removedPixels": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rgbaSHA256": [
+      "87b73a78736c00136294a9ed79c2d8f521ca24f96f0af71fd1976051548cbc0c",
+      "69af6d7de09e9529988ab4993857da5603e9cccb457f014e3f33469421a86478",
+      "c98d96ab114957cabb8e2c79a0177e1a60f723a493d8569a609af1b0e2e366c6",
+      "c4309d0f7926a3fcb54934f547043bd004d50c97e27bedba36df199d3f811c3e",
+      "a415df6f00dac297d81161a5822ad3e5ea300eb894ae8de19575a26735498a67",
+      "ca80b22977eb145fc3e08320ec09a940901010bc62491c718c4d95e459cc5f3a"
+    ],
+    "argbCRC32": [
+      3307519761,
+      3645112937,
+      2362010319,
+      2717167978,
+      2434673130,
+      834046928
+    ],
+    "bytes": 252275
+  },
+  {
+    "source": "A2_Dolphin_Pink.gif",
+    "sha256": "1f36fdebf5411e352ee7025f3af7c6e17cb6e954e583eeece7b96acb081aed63",
+    "resource": "ocean-1.ocp",
+    "sourceSize": [
+      418,
+      627
+    ],
+    "crop": [
+      26,
+      146,
+      400,
+      529
+    ],
+    "size": [
+      374,
+      383
+    ],
+    "frames": 6,
+    "delays": [
+      180,
+      180,
+      180,
+      180,
+      180,
+      180
+    ],
+    "removedPixels": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rgbaSHA256": [
+      "e5227537a6c899d8c9a5d092d448814243e84c496b1f2063c6fc5008dbbe4bb2",
+      "218cdbaa1b1a2778314fe0f79445480dbbbd643e927b02138a83c664e6adde0f",
+      "e500a2cd5d3b6877e43786381a8fb9c0ee0247037925a387ed8f5bb0585ecc3f",
+      "7a5eb31a6e65e86f69ef6be8aed0aaca0ad1b7c7cd2c12d97b8745d7be1e1f1e",
+      "0e3a98e95298aff8972d59eb7bea5c4c529ee18d8667b44e1566d8babd5a28d1",
+      "86a3f55194285d0a992af08f57b2c6dcd06b1818b430b7678566892af2ef56f1"
+    ],
+    "argbCRC32": [
+      3856305235,
+      3843106205,
+      2583414457,
+      698671525,
+      68038866,
+      3650199573
+    ],
+    "bytes": 205776
+  },
+  {
+    "source": "A3_Dolphin_GrayBlue.gif",
+    "sha256": "757d7b686a4e7e07e060d38e62188be580dce56b0d18b4de27a388fb18970738",
+    "resource": "ocean-2.ocp",
+    "sourceSize": [
+      418,
+      627
+    ],
+    "crop": [
+      20,
+      173,
+      393,
+      491
+    ],
+    "size": [
+      373,
+      318
+    ],
+    "frames": 6,
+    "delays": [
+      180,
+      180,
+      180,
+      180,
+      180,
+      180
+    ],
+    "removedPixels": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rgbaSHA256": [
+      "2aed22cc76f38a4dca190fc857052b9c921f5e6ce49287ca47c5048175eff0e5",
+      "47551d81f15d28940596e3105594b2cf319f0379ba9b2b9e2d57050d88485d29",
+      "d58d1a594b6e18bdb251546c28a39271c7ec57453b313c245de34b33adbea2e4",
+      "618d7d50b4f37401998c36b3320afee554a6c5fee58bd29c43443b29be018974",
+      "79d59c75be2f298b68e4eac7efbe42d01c50bd8398db4b5a866163d8ce2b2c90",
+      "44bad480787de923dbeed2aab92028db3a0416944812f72c8292b1cfc2e18897"
+    ],
+    "argbCRC32": [
+      1125918082,
+      3959939998,
+      3304286992,
+      362905059,
+      2877838691,
+      1592903107
+    ],
+    "bytes": 189161
+  },
+  {
+    "source": "B1_WhaleShark_DeepBlue.gif",
+    "sha256": "980cb93b93d1b6f44ff5345c0e9c68a7781022a51909394ea47ef46a7fde59ea",
+    "resource": "ocean-3.ocp",
+    "sourceSize": [
+      418,
+      627
+    ],
+    "crop": [
+      6,
+      163,
+      402,
+      468
+    ],
+    "size": [
+      396,
+      305
+    ],
+    "frames": 6,
+    "delays": [
+      180,
+      180,
+      180,
+      180,
+      180,
+      180
+    ],
+    "removedPixels": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rgbaSHA256": [
+      "3f6e074609e6bf2d4d9391971d0ac2c46491cf43f61c552a885b01f4ca2b4e71",
+      "58885d1b4748fe36884a3273fe3e778473896b695eddcce903b9247b210dc572",
+      "de03c14ff28b3bcfc0374c06e5f2ce120f9f12a964b0955a8a443f75975f651d",
+      "7c8435794ed55c70373ad6b6b1d1c58ea03ade768b69a6b4cb8f1e315e2668bc",
+      "c3e628f72678055360c59ef1b875fb8df7f36f4490219beae6b0b1f1ac3dcc10",
+      "6f4c5400d805e09378e0f3f8db0a3ccb8abc9d73be90b71597f98b6f1a2208c7"
+    ],
+    "argbCRC32": [
+      6909566,
+      3309432534,
+      2327469156,
+      3721946429,
+      3055371690,
+      2556453913
+    ],
+    "bytes": 244224
+  },
+  {
+    "source": "B2_WhaleShark_LightBlue.gif",
+    "sha256": "6985d06e5b3417789fb9639b3344b70b331e85bbfde2528a154d0f441201dfff",
+    "resource": "ocean-4.ocp",
+    "sourceSize": [
+      418,
+      627
+    ],
+    "crop": [
+      14,
+      158,
+      406,
+      462
+    ],
+    "size": [
+      392,
+      304
+    ],
+    "frames": 6,
+    "delays": [
+      180,
+      180,
+      180,
+      180,
+      180,
+      180
+    ],
+    "removedPixels": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rgbaSHA256": [
+      "22e9c771bcff6088705d4a08d02060b77643c2f7d7d18ab628c89088f9413c43",
+      "90ae759ab497f8f927ba3a344c90ababbd74679a8a1a8109ba7064a24a8ec7fb",
+      "87c34137f6bed13414c987b3cab73ba392f1e371b8f28686f2aa9fbe35d50154",
+      "9a7deba780826462889a881e91459b3a2bae21665b90975c001b4a6d643d9a05",
+      "ee80509fc73bd86ef47ddd3f7d890d2937434d3e0a6645190c51a36d6777b6e9",
+      "960ee3bb5a66e1111c08d3f714159972a26b697df6d954a1098af46b0faab8e9"
+    ],
+    "argbCRC32": [
+      324583211,
+      3844748742,
+      1960669889,
+      1840940758,
+      3497186730,
+      1101925446
+    ],
+    "bytes": 236827
+  },
+  {
+    "source": "B3_WhaleShark_GrayBlue.gif",
+    "sha256": "fae6d4deb5b8e5d66fe18fe05b16f0d247be68d1013dc93f2d04c355e7d3b085",
+    "resource": "ocean-5.ocp",
+    "sourceSize": [
+      418,
+      627
+    ],
+    "crop": [
+      20,
+      174,
+      399,
+      457
+    ],
+    "size": [
+      379,
+      283
+    ],
+    "frames": 6,
+    "delays": [
+      180,
+      180,
+      180,
+      180,
+      180,
+      180
+    ],
+    "removedPixels": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rgbaSHA256": [
+      "10233a3f10afa25da4e2015d31a5e966a868d4878f604e3841e07b0349fc5418",
+      "c951650385c72f183c12ad57c913c2b9d8cdee8d90ca51a2e34e40aabb0301bc",
+      "0d28a50449770e4ff91145fd248870681f024bf38e5477bfe965ba0ebeee6d62",
+      "9fbefceabad0fc6f998001a6540b09632780e080d86bd14974e451e23b9f2445",
+      "944ed18be31e6af57be75baa277c3503936c88dd46cc63a42cf914c481cb0740",
+      "99b0b534d19f01c95c95b5a924e234925e245a5c5785d49138047071e881880d"
+    ],
+    "argbCRC32": [
+      610334784,
+      1277562201,
+      2861366500,
+      1604184547,
+      140606203,
+      3739627549
+    ],
+    "bytes": 245175
+  }
+]

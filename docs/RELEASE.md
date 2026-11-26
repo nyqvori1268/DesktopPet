@@ -86,3 +86,10 @@ Windows CTest 加入實際 handle 繼承、程序身分、準備就緒／取消�
 Actions 的一般 Push／PR 產物含兩包與雜湊；正式 Tag 通過原有簽署檢查後，上傳兩包、雜湊、update.json／update.sig，使用自動產生的 RELEASE_NOTES.md 優先引導下載版本命名包。本次不建立 Tag 或 Release。
 
 v1.1.1 → v1.2.0 仍下載同名五檔自動包，ECDSA P-256、原有可信金鑰、SHA-256、交易／回滾與設定位置不變。新欄位均可選，三組既有角色與計時資料保留。新版 Updater 接受舊八參數交接；新版配對元件可額外傳入介面語言，原有程序身分檢查不變。簽署更新、故障回滾及兩版端對端升級仍需 Windows 實測。
+
+
+## v1.3.0 海洋素材的發布相容性
+
+新增的 assets/ocean/*.ocp 由生成的 ocean.rc 僅內嵌 DesktopPet.exe。建置時需完整六檔；不把它們以額外 entry 加進 ZIP。兩種 ZIP 都已包含 DesktopPet.exe，因此仍沿用原路徑清單、update.json asset 名稱、SHA-256、ECDSA P-256、主要／備援金鑰與交易／回滾協定。v1.2.0 客戶端可使用相同五檔平坦包更新，免修改舊白名單。手動包自動命名為 DesktopPet_v1.3.0.zip 並含同名根資料夾。
+
+CTest 新增 ocean_embedded：以 Windows 的資料資源載入方式（不執行 EXE）檢查發行主程式實際含六款正確素材。核心測試另外檢查所有影格、資源異常及七物種對話。不要將來源 GIF、自訂寵物、config 或開發工具增列至更新包；發布體積及 v1.2.0 → v1.3.0 簽署更新仍需 Windows 實測。
