@@ -103,3 +103,14 @@ Actions 的官方 commit 來源見 [安全驗證紀錄](SECURITY_TESTING.md)。�
 本地交易 v2 使用同使用者 DPAPI，簽署 Release 的 schema／ECDSA／ZIP 與舊客戶端保持不變。新信任檔仍為 schema 1，多出可選 receipt 欄位供提交一致性判斷，舊客戶端忽略該欄位。舊明文交易／遷移中斷的安全限制及人工處理方式見 [SECURITY.md](../SECURITY.md)。不要手改紀錄或刪除 update-trust.bin 來降版。
 
 本次未改 1.3.0 版號、未產生 Windows EXE／Tag／Release。相同版號不會被既有防降版規則當成更新；請先本地重建／驗證，日後正式發布時再由維護者決定下一個版本，不能略過 SemVer 驗證發布同版覆蓋更新。
+
+
+## v1.4.0 發布準備
+
+以 main `4f8ddb205a7cf9008775143e582ac8f1dd4ba2e0` 為基準，將 `CMakeLists.txt` 的單一版本來源更新為 1.4.0。主程式、Updater、關於介面、Windows VERSIONINFO 及 manifest 均沿用既有版本範本自動產生，勿另行硬編碼。
+
+本版納入貓／狗／鸚鵡／熊貓動畫重製，保留 16 款既有花色與海洋六款，合計 22 外觀；素材與安全／更新／provenance 程式碼未在此次版本準備中修改。CHANGELOG 的 1.4.0 區段供既有腳本擷取本版更新說明。
+
+Windows 建置及測試後，既有 Package.ps1 會自動產生 `DesktopPet_v1.4.0.zip`（含同名根資料夾）與 `DesktopPet-windows-x64.zip`（原五檔自動更新包），SHA256SUMS.txt 涵蓋兩包；update.json 仍指向自動更新專用包，既有金鑰／簽章／來源證明及 build.yml 不變。
+
+此階段只交付必要的版本／文件修改，未執行建置、測試、簽署打包，未建立 v1.4.0 Tag、提交 Commit 或發布 Release。正式發布前請依上述流程由維護者確認實際 Windows 建置、測試、素材顯示、更新／回滾與 provenance 結果，不能將過去驗證紀錄當成本次建置通過。

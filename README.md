@@ -1,4 +1,4 @@
-# DesktopPet 1.3.0
+# DesktopPet 1.4.0
 
 Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲，沒有帳號、遙測、廣告或常駐服務。除了可選的 GitHub 更新，不使用網路。開發者 Meow，© 2026 Meow。軟體與原創素材採 [MIT](LICENSE)；匯入第三方素材另依其授權，見 [元件與素材聲明](THIRD_PARTY_NOTICES.md)。
 
@@ -14,9 +14,9 @@ Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲�
 
 ## 下載與執行
 
-從 [GitHub Releases](https://github.com/nyqvori1268/DesktopPet/releases) 優先下載 `DesktopPet_v{version}.zip`（例如 `DesktopPet_v1.3.0.zip`），完整解壓到可寫入的資料夾，執行同名根資料夾 `DesktopPet_v{version}/` 內的 `DesktopPet.exe`。`DesktopPet-windows-x64.zip` 是自動更新專用包，保留原本平坦的五檔結構；一般手動下載請選版本命名包。`SHA256SUMS.txt` 列出兩種 ZIP 的 SHA-256。不要只取出 EXE；保留 `Updater.exe` 與 `data/dialogue.json`。無需安裝或管理員權限，MSVC Runtime 靜態連結。
+從 [GitHub Releases](https://github.com/nyqvori1268/DesktopPet/releases) 優先下載 `DesktopPet_v{version}.zip`（例如 `DesktopPet_v1.4.0.zip`），完整解壓到可寫入的資料夾，執行同名根資料夾 `DesktopPet_v{version}/` 內的 `DesktopPet.exe`。`DesktopPet-windows-x64.zip` 是自動更新專用包，保留原本平坦的五檔結構；一般手動下載請選版本命名包。`SHA256SUMS.txt` 列出兩種 ZIP 的 SHA-256。不要只取出 EXE；保留 `Updater.exe` 與 `data/dialogue.json`。無需安裝或管理員權限，MSVC Runtime 靜態連結。
 
-**此 v1.3.0 增量交付沒有 Windows EXE。** 本次實際執行 Linux 核心測試；MSVC Release、Windows GUI 與發布打包／簽署仍待 Windows 或 Actions 執行，詳見 [v1.3.0 驗證紀錄](docs/V130_TESTING.md)。
+**目前為 v1.4.0 發布準備。** 本次僅更新版本及文件，沒有附 Windows EXE、建立 Tag 或發布 Release；Windows Release 建置、測試與簽署打包請依既有 [發布流程](docs/RELEASE.md) 執行。素材重製的既有驗證紀錄及實機待測事項見 [素材文件](docs/RENEWED_PETS.md)。
 
 ## 語言、對話與關於
 
@@ -106,10 +106,10 @@ Tag `vX.Y.Z` 必須與 CMake 版本相同；CI 建置、測試、打包、驗證
 - 程式正常退出後不會在背景提醒；手動隱藏／關閉寵物視窗不等於退出。
 
 
-安全、隱私、更新故障處理與疑似防毒誤判回報見 [SECURITY.md](SECURITY.md)。本次強化不變更 1.3.0、正式金鑰或發布狀態；舊未受保護交易紀錄需要人工核對，不會自動信任備份。
+安全、隱私、更新故障處理與疑似防毒誤判回報見 [SECURITY.md](SECURITY.md)。v1.4.0 沿用既有安全強化與正式金鑰；舊未受保護交易紀錄需要人工核對，不會自動信任備份。
 
 
-開發中美術重製：[16 種外觀預覽](docs/renewed-pets.png)／[動作預覽](docs/renewed-actions.png)。版本仍為 1.3.0，這些修改尚未正式發布；Windows 顯示與編譯待驗證。
+v1.4.0 動畫重製：[16 種外觀預覽](docs/renewed-pets.png)／[動作預覽](docs/renewed-actions.png)。保留全部花色及海洋寵物；目前只準備發布資訊，Windows 顯示與編譯結果依實際執行紀錄判定。
 
 ## Code signing policy
 

@@ -1,6 +1,6 @@
-# 貓、狗、鸚鵡、熊貓素材重製（開發中）
+# v1.4.0 貓、狗、鸚鵡、熊貓動畫重製
 
-基準為 GitHub main `c758eeba3f1eaddf80ec64fdab3cce193cedfc37`（v1.3.0）。開始時工作區乾淨並已 fast-forward 同步；沒有從舊 DesktopPet 工作目錄複製程式。版本未變更，未提交 Commit／Tag 或發布 Release。
+原素材重製以 v1.3.0 後的 main `c758eeba3f1eaddf80ec64fdab3cce193cedfc37` 為基準；本次從最新 main `4f8ddb205a7cf9008775143e582ac8f1dd4ba2e0` 準備整合為 v1.4.0。僅更新版本與發布文件，來源圖集、GIF、內嵌資源、花色索引及程式邏輯不變；未提交 Commit／Tag 或發布 Release。
 
 ## 外觀與花色相容
 
@@ -42,6 +42,6 @@ g++ -std=c++17 -O2 -DNDEBUG -Wall -Wextra -Werror -pedantic -Isrc tests/renewed_
 
 轉換／GIF 檢查需要開發環境 Pillow；不增加桌面程式相依。CMake 增加 `renewed_art`，Windows CTest 增加 `renewed_embedded` 驗證實際 EXE 的全部十六資源及來源雜湊，原有測試保留。
 
-實際 Linux 結果：新增素材核心 **1,598,110** 項檢查通過，ASan／UBSan 同數通過（此環境不支援 LeakSanitizer，未宣稱漏洩檢查通過）；既有核心 **5,157,782** 項與安全 **4,141** 項通過；128 段 GIF 的透明、循環、時長、邊界及來源雜湊檢查通過。總數包含大量逐像素斷言，不等於獨立情境數。最新安全檔、海洋素材與設定／花色核心逐位元比對保留。
+素材重製階段既有的實際 Linux 結果（本次版本準備未重跑）：新增素材核心 **1,598,110** 項檢查通過，ASan／UBSan 同數通過（此環境不支援 LeakSanitizer，未宣稱漏洩檢查通過）；既有核心 **5,157,782** 項與安全 **4,141** 項通過；128 段 GIF 的透明、循環、時長、邊界及來源雜湊檢查通過。總數包含大量逐像素斷言，不等於獨立情境數。最新安全檔、海洋素材與設定／花色核心逐位元比對保留。
 
 本環境無 CMake、MSVC、Windows SDK、PowerShell 或 Windows 桌面，尚未編譯 Windows EXE／RC 或執行 Windows GUI。實際選單切色、各 DPI 小尺寸、眨眼／睡眠轉換、拖曳／穿透、素材載入／內嵌資源 CTest、更新／回滾及效能仍待 Windows／Actions 驗證；沒有宣稱達到 CPU、記憶體或 15 MB 完整發布目標。
