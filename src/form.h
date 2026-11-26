@@ -54,7 +54,7 @@ struct Form{
   CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_DEFPUSHBUTTON,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDOK),instance,nullptr);CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDCANCEL),instance,nullptr);
   CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDHELP),instance,nullptr);
   // Creation must not reinterpret values in an old UI language.
-  localize(uiLanguage());RECT r{};GetWindowRect(hwnd,&r);int w=r.right-r.left,h=r.bottom-r.top;SetWindowPos(hwnd,nullptr,std::max(int(mi.rcWork.left),(mi.rcWork.left+mi.rcWork.right-w)/2),std::max(int(mi.rcWork.top),(mi.rcWork.top+mi.rcWork.bottom-h)/2),0,0,SWP_NOSIZE|SWP_NOZORDER);
+  localize(uiLanguage());RECT r{};GetWindowRect(hwnd,&r);int w=r.right-r.left,h=r.bottom-r.top;SetWindowPos(hwnd,nullptr,std::max(int(mi.rcWork.left),int((mi.rcWork.left+mi.rcWork.right-w)/2)),std::max(int(mi.rcWork.top),int((mi.rcWork.top+mi.rcWork.bottom-h)/2)),0,0,SWP_NOSIZE|SWP_NOZORDER);
   EnableWindow(owner,FALSE);ShowWindow(hwnd,SW_SHOW);SetForegroundWindow(hwnd);SetFocus(fields.empty()?GetDlgItem(hwnd,IDOK):fields[0].input);MSG message{};while(!closed){int result=GetMessageW(&message,nullptr,0,0);if(result<=0){if(!result)PostQuitMessage(int(message.wParam));break;}if(!IsDialogMessageW(hwnd,&message)){TranslateMessage(&message);DispatchMessageW(&message);}}
   EnableWindow(owner,TRUE);if(font){DeleteObject(font);font=nullptr;}
  }
