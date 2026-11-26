@@ -44,6 +44,11 @@ jobs:
       - name: Verify actual PE mitigations and runtime imports
         shell: pwsh
         run: ./tools/Test-PE.ps1
+      - name: Display executable SHA256
+        shell: pwsh
+        run: |
+          Get-FileHash build/Release/DesktopPet.exe -Algorithm SHA256 | Format-List Algorithm, Hash, Path
+          Get-FileHash build/Release/Updater.exe -Algorithm SHA256 | Format-List Algorithm, Hash, Path
       - name: Portable package (CI)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         shell: pwsh
