@@ -16,11 +16,13 @@ struct Field{
  bool combo()const{return !optionIds.empty()||!options.empty();}
 };
 struct Form{
+ bool nameMode=false;HWND nameCounter=nullptr;
  bool resizable=false;int logicalWidth=640,logicalHeight=480;
  UITheme theme;std::vector<TextId>tabIds;int selectedTab=0;HWND tabs=nullptr;std::function<void(int,int)>onTab;
  std::vector<Field>fields;std::function<bool(std::vector<Field>&)>apply;std::wstring title;TextId titleId=TextId::Count;
  std::function<std::wstring()>titleFactory;std::function<void(Language)>onLanguage;std::function<void()>preview;HWND hwnd=nullptr;HFONT font=nullptr;bool closed=false,messageMode=false,showCancel=true;TextId okId=TextId::S018,cancelId=TextId::S019;int dpi=96;
  int px(int n)const{return MulDiv(n,dpi,96);}
+ void updateNameCounter(){if(!nameMode||!nameCounter||fields.empty()||!fields[0].input)return;NameMetrics metrics;try{metrics=petNameMetrics(utf8(controlText(fields[0].input)));}catch(const std::exception&){/* Incomplete UTF-16/IME input stays editable, never enters config. */}SetWindowTextW(nameCounter,wf(TextId::NameRemaining,{std::to_wstring(12-metrics.units)}).c_str());EnableWindow(GetDlgItem(hwnd,IDOK),metrics.valid);}
  void completeIME(){for(auto&field:fields)if(!field.check&&!field.combo()){HIMC context=ImmGetContext(field.input);if(context){ImmNotifyIME(context,NI_COMPOSITIONSTR,CPS_COMPLETE,0);ImmReleaseContext(field.input,context);}}}
  void localize(Language previous){
   if(onLanguage)onLanguage(previous);
@@ -40,6 +42,7 @@ struct Form{
   else for(auto&field:fields){RECT measured{0,0,px(204),0};auto caption=field.caption();DrawTextW(dc,caption.c_str(),-1,&measured,DT_CALCRECT|DT_WORDBREAK|DT_NOPREFIX);int h=field.multiline?px(field.multilineHeight):px(28),row=std::max(h,int(measured.bottom)+px(4));
    SetWindowPos(field.labelWindow,nullptr,px(16),y+px(3),px(204),row,SWP_NOZORDER);SetWindowPos(field.input,nullptr,px(232),y,px(312),field.combo()?px(220):h,SWP_NOZORDER);SendMessageW(field.labelWindow,WM_SETFONT,WPARAM(font),TRUE);SendMessageW(field.input,WM_SETFONT,WPARAM(font),TRUE);y+=row+px(10);
   }
+  if(nameCounter){SetWindowPos(nameCounter,nullptr,px(16),y,px(528),px(32),SWP_NOZORDER);SendMessageW(nameCounter,WM_SETFONT,WPARAM(font),TRUE);y+=px(38);updateNameCounter();}
   SelectObject(dc,old);ReleaseDC(hwnd,dc);for(int id:{IDHELP,IDOK,IDCANCEL}){if((id==IDCANCEL&&!showCancel)||(id==IDHELP&&!preview)){ShowWindow(GetDlgItem(hwnd,id),SW_HIDE);continue;}SetWindowPos(GetDlgItem(hwnd,id),nullptr,px(id==IDHELP?16:id==IDOK?328:440),y+px(4),px(104),px(32),SWP_NOZORDER);SendDlgItemMessageW(hwnd,id,WM_SETFONT,WPARAM(font),TRUE);}
   if(previousFont)DeleteObject(previousFont);
   RECT size{0,0,px(560),y+px(52)};AdjustWindowRectExForDpi(&size,WS_CAPTION|WS_SYSMENU,FALSE,WS_EX_DLGMODALFRAME,dpi);SetWindowPos(hwnd,nullptr,0,0,size.right-size.left,size.bottom-size.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
@@ -69,7 +72,7 @@ struct Form{
   if(message==WM_DRAWITEM){auto item=reinterpret_cast<DRAWITEMSTRUCT*>(lp);if(item->hwndItem==self->tabs){wchar_t text[100]{};TCITEMW tab{};tab.mask=TCIF_TEXT;tab.pszText=text;tab.cchTextMax=100;TabCtrl_GetItem(self->tabs,item->itemID,&tab);self->theme.button(item,text,false,int(item->itemID)==self->selectedTab);}else self->theme.button(item,controlText(item->hwndItem),item->CtlID==IDOK);return TRUE;}
   if(message==WM_NOTIFY&&self->tabs){auto header=reinterpret_cast<NMHDR*>(lp);if(header->hwndFrom==self->tabs&&header->code==TCN_SELCHANGE){self->completeIME();int next=TabCtrl_GetCurSel(self->tabs);if(next>=0){if(self->onTab)self->onTab(self->selectedTab,next);self->selectedTab=next;InvalidateRect(self->tabs,nullptr,TRUE);}return 0;}}
   if(message==LanguageChanged){self->localize(Language(wp));return 0;}
-  if(message==WM_COMMAND){if(LOWORD(wp)==IDHELP&&self->preview){try{self->preview();}catch(const std::exception&e){auto text=std::string(e.what());localizedMessage(window,GetModuleHandleW(nullptr),TextId::S016,[text]{return wide(currentSystemText(text));},false);}return 0;}if(LOWORD(wp)==IDOK){self->completeIME();for(auto&field:self->fields){if(field.check)field.value=SendMessageW(field.input,BM_GETCHECK,0,0)==BST_CHECKED?L"1":L"0";else if(field.combo())field.value=std::to_wstring(SendMessageW(field.input,CB_GETCURSEL,0,0));else{int n=GetWindowTextLengthW(field.input);std::wstring value(size_t(n)+1,0);GetWindowTextW(field.input,value.data(),n+1);value.resize(n);field.value=std::move(value);}}try{if(self->apply(self->fields))DestroyWindow(window);}catch(const std::exception&e){auto message=std::string(e.what());localizedMessage(window,GetModuleHandleW(nullptr),TextId::S016,[message]{return wide(currentSystemText(message));},false);}return 0;}if(LOWORD(wp)==IDCANCEL){DestroyWindow(window);return 0;}}
+  if(message==WM_COMMAND){if(self->nameMode&&HIWORD(wp)==EN_CHANGE){self->updateNameCounter();return 0;}if(LOWORD(wp)==IDHELP&&self->preview){try{self->preview();}catch(const std::exception&e){auto text=std::string(e.what());localizedMessage(window,GetModuleHandleW(nullptr),TextId::S016,[text]{return wide(currentSystemText(text));},false);}return 0;}if(LOWORD(wp)==IDOK){self->completeIME();for(auto&field:self->fields){if(field.check)field.value=SendMessageW(field.input,BM_GETCHECK,0,0)==BST_CHECKED?L"1":L"0";else if(field.combo())field.value=std::to_wstring(SendMessageW(field.input,CB_GETCURSEL,0,0));else{int n=GetWindowTextLengthW(field.input);std::wstring value(size_t(n)+1,0);GetWindowTextW(field.input,value.data(),n+1);value.resize(n);field.value=std::move(value);}}try{if(self->nameMode)validatePetName(utf8(self->fields[0].value));if(self->apply(self->fields))DestroyWindow(window);}catch(const std::exception&e){auto message=std::string(e.what());localizedMessage(window,GetModuleHandleW(nullptr),TextId::S016,[message]{return wide(currentSystemText(message));},false);}return 0;}if(LOWORD(wp)==IDCANCEL){DestroyWindow(window);return 0;}}
   if(message==WM_CLOSE){DestroyWindow(window);return 0;}if(message==WM_DESTROY){self->closed=true;return 0;}
   if(message==WM_DPICHANGED){self->dpi=HIWORD(wp);auto r=reinterpret_cast<RECT*>(lp);SetWindowPos(window,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER);self->layout();return 0;}return DefWindowProcW(window,message,wp,lp);
  }
@@ -82,10 +85,11 @@ struct Form{
   int id=100;for(auto&field:fields){field.labelWindow=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE,0,0,1,1,hwnd,nullptr,instance,nullptr);DWORD style=WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_CLIPSIBLINGS;const wchar_t*cls=L"EDIT";
    if(field.check){cls=L"BUTTON";style|=BS_AUTOCHECKBOX;}else if(field.combo()){cls=L"COMBOBOX";style|=CBS_DROPDOWNLIST|WS_VSCROLL;}else style|=WS_BORDER|(field.multiline?ES_MULTILINE|ES_AUTOVSCROLL|ES_WANTRETURN|WS_VSCROLL:ES_AUTOHSCROLL);
    field.input=CreateWindowExW(0,cls,field.check?L"":field.value.c_str(),style,0,0,1,1,hwnd,reinterpret_cast<HMENU>(INT_PTR(id++)),instance,nullptr);
-   if(field.check)SendMessageW(field.input,BM_SETCHECK,field.value==L"1"?BST_CHECKED:BST_UNCHECKED,0);else if(!field.combo()){SendMessageW(field.input,EM_SETLIMITTEXT,field.readOnly?65536:field.multiline?field.textLimit:120,0);if(field.readOnly)SendMessageW(field.input,EM_SETREADONLY,TRUE,0);}
+   if(field.check)SendMessageW(field.input,BM_SETCHECK,field.value==L"1"?BST_CHECKED:BST_UNCHECKED,0);else if(!field.combo()){SendMessageW(field.input,EM_SETLIMITTEXT,field.readOnly?65536:field.multiline?field.textLimit:nameMode?2048:120,0);if(field.readOnly)SendMessageW(field.input,EM_SETREADONLY,TRUE,0);}
   }
   CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDOK),instance,nullptr);CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDCANCEL),instance,nullptr);
   CreateWindowW(L"BUTTON",L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,0,0,1,1,hwnd,reinterpret_cast<HMENU>(IDHELP),instance,nullptr);
+  if(nameMode)nameCounter=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE,0,0,1,1,hwnd,nullptr,instance,nullptr);
   if(!tabIds.empty())tabs=CreateWindowW(WC_TABCONTROLW,L"",WS_CHILD|WS_VISIBLE|WS_TABSTOP|TCS_BUTTONS|TCS_FLATBUTTONS|TCS_FIXEDWIDTH|TCS_OWNERDRAWFIXED|TCS_MULTILINE,0,0,1,1,hwnd,nullptr,instance,nullptr);
   theme.sync(hwnd);for(auto&field:fields)SetWindowTheme(field.input,L"",L"");
   // Creation must not reinterpret values in an old UI language.

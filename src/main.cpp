@@ -30,7 +30,7 @@ const TextId parrots[]={TextId::S047,TextId::S048,TextId::S049,TextId::S050,Text
 const TextId dolphins[]={TextId::DolphinBlue,TextId::DolphinPink,TextId::DolphinGray};
 const TextId whaleSharks[]={TextId::WhaleSharkDeep,TextId::WhaleSharkLight,TextId::WhaleSharkGray};
 struct App{
- Nameplate nameplate;int previewOriginalScale=0;POINT previewOriginalPosition{};
+ Nameplate nameplate;UiRect nameAnchor{24,24,96,96};PixelRect stableVisible;std::tuple<const ImageClip*,int,int,int,Action,size_t,size_t> anchorKey{};bool anchorCached=false;int previewOriginalScale=0;POINT previewOriginalPosition{};
  HINSTANCE instance;HWND window=nullptr,bubble=nullptr;HANDLE singleton=nullptr;Config c;fs::path config;Json dialogue;UpdateClient updates;UpdateHandoff handoff;PetUpdateWindow updateWindow;AboutWindow aboutWindow;std::mt19937 rng{std::random_device{}()};std::string lastLine;Sprite sprite;CustomPet custom;OceanPet ocean;RenewedPet renewed;Spring spring;Action action=Action::Idle;
  bool speechIsDialogue=false;bool manualHidden=false,fullscreenHidden=false,dragging=false,pressed=false,tracking=false,updating=false,loading=true,manualCheck=false,updateNotified=false,downloadRequested=false,formOpen=false,menuOpen=false,reminderQueued=false;
  POINT down{},lastMouse{},startPos{};int dpi=96,canvas=144,petSize=96,clicks=0,strokes=0,lastDirection=0;ULONGLONG nextMarineSpecial=0,nextUpdateNotice=0,lastInput=0,actionEnd=0,bubbleEnd=0,lastClick=0,lastStroke=0,nextIdle=0,frameTime=0,lastMove=0;std::wstring speech,handoffError;std::string observedStatus;fs::path observedStage;UINT taskbar=0;HDC memory=nullptr;HBITMAP bitmap=nullptr,oldBitmap=nullptr;uint32_t*bits=nullptr;int allocated=0;
@@ -88,7 +88,24 @@ struct App{
    // Marine flippers, tail, sleep breathing and expressions are authored in each clip.
   }
   if(renewed.identity()>=0){image=&renewed.clip();imageFrame=renewed.frame(action,tick);sy*=1.+std::sin(t*(action==Action::Sleep?1.5:2.5))*.015;if(action==Action::Angry)sx*=1.+std::sin(t*18)*.018;}
+  // Stable per-animation alpha union ignores transparent canvas and per-frame breathing/jumps.
+  size_t first=0,count=image?image->frames.size():0;
+  if(image&&oceanSpecies(c.pet)&&count==120){first=size_t(OceanPet::actionSlot(action))*12;count=12;if(action==Action::Wake){first=0;count=84;}}
+  else if(image&&renewed.identity()>=0){
+   if(image->frames.size()==30&&(action==Action::Yawn||action==Action::Belly)){first=action==Action::Yawn?6:18;count=12;}
+   else if(action==Action::Sleep){first=2;count=1;}else if(action==Action::Blink||action==Action::Shy){first=1;count=1;}
+   else if(action==Action::Belly){first=5;count=1;}else if(action==Action::Stretch){first=0;count=5;}
+   else if(action==Action::Wake||action==Action::Yawn||((action==Action::Happy||action==Action::Pet)&&c.pet==3)){first=0;count=6;}
+   else{first=0;count=2;}
+  }
+  auto key=std::make_tuple(image,c.pet,c.coat,c.activeCustom,action,first,count);
+  if(!anchorCached||key!=anchorKey){stableVisible=image?image->visibleBounds(first,count):PixelRect{};anchorKey=key;anchorCached=true;}
   double aspect=image?double(image->crop.w)/image->crop.h:1.;
+  double anchorScaleX=spring.x,anchorScaleY=spring.y;
+  if(c.pet==2&&action==Action::Stretch){anchorScaleX*=1.16;anchorScaleY*=.85;}if(c.pet==2&&action==Action::Belly){anchorScaleX*=1.08;anchorScaleY*=.94;}
+  if(action==Action::Sleep&&!oceanSpecies(c.pet))anchorScaleY*=.93;
+  int anchorW=std::max(1,int(petSize*anchorScaleX*std::min(1.,aspect))),anchorH=std::max(1,int(petSize*anchorScaleY/std::max(1.,aspect)));
+  nameAnchor=nameplateAnchor(stableVisible,image?image->crop:PixelRect{},canvas,anchorW,anchorH);
   int w=std::max(1,int(petSize*sx*std::min(1.,aspect))),h=std::max(1,int(petSize*sy/std::max(1.,aspect))),ox=(canvas-w)/2,oy=(canvas-h)/2;int jump=0;if(action==Action::Remind&&tick<actionEnd)jump=int(std::abs(std::sin((actionEnd-tick)/1800.*3.14159265*3))*petSize*.16);oy-=jump;
   int sway=renewed.identity()>=0&&action!=Action::Sleep?int(std::lround(std::sin(t*2.8)*2.)):0;
   if(oceanSpecies(c.pet)||renewed.identity()>=0)blitNativePet(*image,imageFrame,bits,canvas,ox,oy,w,h,sway);
@@ -105,7 +122,7 @@ struct App{
   }
   POINT dest{c.x,c.y},src{0,0};SIZE sz{canvas,canvas};BLENDFUNCTION blend{AC_SRC_OVER,0,BYTE(c.opacity*255/100),AC_SRC_ALPHA};UpdateLayeredWindow(window,nullptr,&dest,&sz,memory,&src,0,&blend,ULW_ALPHA);updateNameplate();
  }
- void updateNameplate(){std::optional<UiRect>avoid;if(bubble&&IsWindowVisible(bubble)&&!speech.empty()){RECT r{};GetWindowRect(bubble,&r);avoid=UiRect{int(r.left),int(r.top),int(r.right-r.left),int(r.bottom-r.top)};}nameplate.place(c,canvas,dpi,hidden()||(menuOpen&&!formOpen),avoid);}
+ void updateNameplate(){std::optional<UiRect>avoid;if(bubble&&IsWindowVisible(bubble)&&!speech.empty()){RECT r{};GetWindowRect(bubble,&r);avoid=UiRect{int(r.left),int(r.top),int(r.right-r.left),int(r.bottom-r.top)};}nameplate.place(c,canvas,dpi,hidden()||(menuOpen&&!formOpen),avoid,UiRect{c.x+nameAnchor.x,c.y+nameAnchor.y,nameAnchor.w,nameAnchor.h});}
  void placeBubble(){
   if(!bubble)return;
   if(hidden()||menuOpen||speech.empty()||dragging){ShowWindow(bubble,SW_HIDE);return;}
@@ -150,7 +167,7 @@ struct App{
  void timerForm(Mode mode){if(formOpen)return;formOpen=true;try{TimerWindow editor(c.timer,mode,[&]{reminderQueued=c.timer.pending;speech.clear();bubbleEnd=0;ShowWindow(bubble,SW_HIDE);tray();persist();});editor.show(window,instance);}catch(...){formOpen=false;throw;}formOpen=false;lastInput=GetTickCount64();}
  void scaleForm(){if(formOpen)return;formOpen=true;previewOriginalScale=c.scale;previewOriginalPosition={c.x,c.y};bool accepted=false;try{ScaleWindow editor;accepted=editor.show(window,instance,c.scale,[&](int value){c.scale=value;sizeChanged();});}catch(...){c.scale=previewOriginalScale;c.x=previewOriginalPosition.x;c.y=previewOriginalPosition.y;previewOriginalScale=0;formOpen=false;if(IsWindow(window))sizeChanged();throw;}if(!accepted){c.scale=previewOriginalScale;c.x=previewOriginalPosition.x;c.y=previewOriginalPosition.y;}previewOriginalScale=0;formOpen=false;if(IsWindow(window))sizeChanged();persist();lastInput=GetTickCount64();}
  void oneNumber(TextId title,int value,int lo,int hi,const std::function<void(int)>&save){Form f;f.titleId=title;f.fields.emplace_back(TextId::ValueRange,std::to_wstring(value));f.fields[0].labelFactory=[lo,hi]{return wf(TextId::ValueRange,{std::to_wstring(lo),std::to_wstring(hi)});};f.apply=[&](auto&v){save(number(v[0].value,lo,hi));persist();return true;};showForm(f);}
- void preferences(){Form f;f.titleId=TextId::S081;f.fields={{TextId::S082,c.autoHide?L"1":L"0",true},{TextId::S083,c.startup?L"1":L"0",true},{TextId::S084,c.autoUpdate?L"1":L"0",true},{TextId::S085,std::to_wstring(c.timer.snoozeMinutes)},{TextId::S086,wide(c.skip)}};f.apply=[&](auto&v){int snooze=number(v[3].value,1,1440);bool startup=v[1].value==L"1";setStartup(startup);c.startup=startup;c.autoHide=v[0].value==L"1";c.autoUpdate=v[2].value==L"1";c.timer.snoozeMinutes=snooze;c.skip=utf8(v[4].value);visibility();persist();return true;};showForm(f);}
+ void preferences(){Form f;f.titleId=TextId::S081;f.fields={{TextId::S082,c.autoHide?L"1":L"0",true},{TextId::S083,c.startup?L"1":L"0",true},{TextId::S084,c.autoUpdate?L"1":L"0",true},{TextId::S085,std::to_wstring(c.timer.snoozeMinutes)}};f.apply=[&](auto&v){int snooze=number(v[3].value,1,1440);bool startup=v[1].value==L"1";setStartup(startup);c.startup=startup;c.autoHide=v[0].value==L"1";c.autoUpdate=v[2].value==L"1";c.timer.snoozeMinutes=snooze;visibility();persist();return true;};showForm(f);}
  void selectPet(int pet){if(!c.selectBuiltin(pet,c.coat))return;ocean.clear();renewed.clear();custom=CustomPet{};lastLine.clear();if(!c.timer.pending){speech.clear();ShowWindow(bubble,SW_HIDE);}render();tray();persist();}
  void selectProfile(int slot){
   CustomPet next;std::string failure;
@@ -171,8 +188,8 @@ struct App{
  }
 
  void renameProfile(int slot){
-  Form f;f.titleFactory=[slot]{return wf(TextId::ProfileTitle,{std::to_wstring(slot+1)});};f.fields.emplace_back(TextId::S089,wide(c.profiles[size_t(slot)].name));
-  f.apply=[&](auto&fields){auto value=fields[0].value;if(value.empty()||value.size()>30)throw std::runtime_error(tr(TextId::S090));c.profiles[size_t(slot)].name=utf8(value);c.profiles[size_t(slot)].nameDefault=false;if(c.pet==2&&c.activeCustom==slot)c.syncName();updateNameplate();tray();persist();return true;};showForm(f);
+  Form f;f.titleFactory=[slot]{return wf(TextId::ProfileTitle,{std::to_wstring(slot+1)});};f.nameMode=true;f.fields.emplace_back(TextId::S089,wide(c.profiles[size_t(slot)].name));
+  f.apply=[&](auto&fields){auto value=fields[0].value;validatePetName(utf8(value));c.profiles[size_t(slot)].name=utf8(value);c.profiles[size_t(slot)].nameDefault=false;if(c.pet==2&&c.activeCustom==slot)c.syncName();updateNameplate();tray();persist();return true;};showForm(f);
  }
  void importCustom(int state,int slot=-1){
   if(slot<0)slot=c.activeCustom;
@@ -185,14 +202,14 @@ struct App{
   auto name=sha256(bytes)+(header.gif?".gif":".png");auto stored=customDirectory()/wide(name);rejectReparse(stored);
   atomicWrite(stored,bytes.data(),bytes.size());auto decoded=decodeCustom(stored);
   if(state==0){
-   Form f;f.titleId=TextId::S095;auto proposed=fs::path(file).stem().wstring();if(proposed.empty()||proposed.size()>30)proposed=tw(TextId::S002);
-   f.fields.emplace_back(TextId::S089,proposed);
-   f.apply=[&](auto&fields){auto text=fields[0].value;if(text.empty()||text.size()>30)throw std::runtime_error(tr(TextId::S090));
-    c.profiles[size_t(slot)].files=Json{};c.profiles[size_t(slot)].files[customStates[0]]=name;c.profiles[size_t(slot)].name=utf8(text);c.profiles[size_t(slot)].nameDefault=false;c.selectCustom(slot);ocean.clear();renewed.clear();custom=CustomPet{};custom.set(0,std::move(decoded));render();tray();persist();return true;};showForm(f);
-  }else{c.profiles[size_t(slot)].files[customStates[state]]=name;if(c.pet==2&&c.activeCustom==slot)custom.set(state,std::move(decoded));render();persist();}
+   Form f;f.titleId=TextId::S095;auto proposed=fs::path(file).stem().wstring();if(!petNameMetrics(utf8(proposed)).valid)proposed=tw(TextId::S002);
+   f.nameMode=true;f.fields.emplace_back(TextId::S089,proposed);
+   f.apply=[&](auto&fields){auto text=fields[0].value;validatePetName(utf8(text));
+    c.profiles[size_t(slot)].files=Json{};c.profiles[size_t(slot)].files[customStates[0]]=name;c.profiles[size_t(slot)].name=utf8(text);c.profiles[size_t(slot)].nameDefault=false;c.selectCustom(slot);ocean.clear();renewed.clear();custom=CustomPet{};anchorCached=false;custom.set(0,std::move(decoded));render();tray();persist();return true;};showForm(f);
+  }else{c.profiles[size_t(slot)].files[customStates[state]]=name;anchorCached=false;if(c.pet==2&&c.activeCustom==slot)custom.set(state,std::move(decoded));render();persist();}
  }
  void command(UINT id){if(id>=Language0&&id<Language0+3){changeLanguage(Language(id-Language0));return;}if(id>=DialogueLanguage0&&id<DialogueLanguage0+4){changeDialogue(id==DialogueLanguage0?"follow-ui":languageCode(Language(id-DialogueLanguage0-1)));return;}if(id>=Profile0&&id<Profile0+48){int slot=int(id-Profile0)/16,action=int(id-Profile0)%16;if(action==0)selectProfile(slot);else if(action==1)renameProfile(slot);else if(action==2){if(localizedMessage(window,instance,TextId::S097,[]{return std::wstring(tw(TextId::S096));},true)){bool current=c.pet==2&&c.activeCustom==slot;c.clearProfile(slot);if(current)custom=CustomPet{};lastLine.clear();if(!c.timer.pending){speech.clear();ShowWindow(bubble,SW_HIDE);}render();tray();persist();}}else if(action==10)editDialogue(slot);else if(action==11){c.profiles[size_t(slot)].name=std::string(tr(TextId::S004,Language::ZhTW))+std::to_string(slot+1);c.profiles[size_t(slot)].nameDefault=true;if(c.pet==2&&c.activeCustom==slot)c.syncName();tray();updateNameplate();persist();}else if(action>=3&&action<=9)importCustom(action-3,slot);return;}if(id>=CustomAction0&&id<CustomAction0+7){importCustom(int(id-CustomAction0));return;}lastInput=GetTickCount64();if(id>=Coat0&&id<Coat0+5){if(id>=Coat0+UINT(builtinCoats(c.pet)))return;c.selectBuiltin(c.pet,int(id-Coat0));ocean.clear();renewed.clear();lastLine.clear();if(!c.timer.pending){speech.clear();ShowWindow(bubble,SW_HIDE);}render();persist();return;}if(id>=Quick0&&id<Quick0+5){int mins[]={5,15,25,30,60};c.timer.mode=Mode::Countdown;c.timer.interval=mins[id-Quick0]*60;c.timer.start(now());speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();return;}
-  switch(id){case ToggleNameplate:c.showNameplate=!c.showNameplate;clampPosition();updateNameplate();placeBubble();persist();break;case ResetName:c.resetName();tray();updateNameplate();persist();break;case ToggleDialogue:c.dialogueEnabled=!c.dialogueEnabled;if(!c.timer.pending&&speechIsDialogue){speech.clear();ShowWindow(bubble,SW_HIDE);}persist();break;case Countdown:timerForm(Mode::Countdown);break;case Interval:timerForm(Mode::Interval);break;case Alarm:timerForm(Mode::Alarm);break;case Pause:if(c.timer.paused)c.timer.resume(now());else c.timer.pause(now());persist();break;case Stop:c.timer.stop();speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();break;case Reset:c.timer.start(now());speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();break;case Acknowledge:if(localizedMessage(window,instance,TextId::S099,[&]{return wide(c.timer.title)+L"\n\n"+wide(c.timer.text)+tw(TextId::S098);},true))acknowledge();break;case Snooze5:defer(5);break;case Snooze10:defer(10);break;case Snooze15:defer(15);break;case SnoozeCustom:oneNumber(TextId::S100,c.timer.snoozeMinutes,1,1440,[&](int n){defer(n);});break;case Cat:case Dog:selectPet(id==Dog?1:0);break;case ImportCustom:importCustom(0);break;case SelectCustom:selectProfile(c.activeCustom);break;case Parrot:selectPet(3);break;case Panda:selectPet(4);break;case Dolphin:selectPet(5);break;case WhaleShark:selectPet(6);break;case Rename:{Form f;f.titleId=TextId::S101;f.fields.emplace_back(TextId::S102,wide(c.name));f.apply=[&](auto&v){if(v[0].value.empty()||v[0].value.size()>30)throw std::runtime_error(tr(TextId::S090));c.rename(utf8(v[0].value));tray();updateNameplate();persist();return true;};showForm(f);break;}case Size:scaleForm();break;case Opacity:oneNumber(TextId::S104,c.opacity,20,100,[&](int n){c.opacity=n;render();});break;case Top:c.top=!c.top;clampPosition();placeBubble();persist();break;case Pass:c.pass=!c.pass;applyPass();persist();break;case Visibility:manualHidden=!manualHidden;visibility();if(!manualHidden&&c.timer.pending)reminder();break;case Preferences:preferences();break;case CheckUpdate:if(updates.busy()||handoff.pending()){auto info=updates.latest();if(!info.version.empty())offerUpdate(info);}else{manualCheck=true;updates.check();if(!updates.enabled()){error(wide(updates.message()));manualCheck=false;}}break;case About:aboutWindow.show(window,instance);break;case Exit:if(handoff.pending())handoff.cancel();DestroyWindow(window);break;}
+  switch(id){case ToggleNameplate:c.showNameplate=!c.showNameplate;clampPosition();updateNameplate();placeBubble();persist();break;case ResetName:c.resetName();tray();updateNameplate();persist();break;case ToggleDialogue:c.dialogueEnabled=!c.dialogueEnabled;if(!c.timer.pending&&speechIsDialogue){speech.clear();ShowWindow(bubble,SW_HIDE);}persist();break;case Countdown:timerForm(Mode::Countdown);break;case Interval:timerForm(Mode::Interval);break;case Alarm:timerForm(Mode::Alarm);break;case Pause:if(c.timer.paused)c.timer.resume(now());else c.timer.pause(now());persist();break;case Stop:c.timer.stop();speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();break;case Reset:c.timer.start(now());speech.clear();ShowWindow(bubble,SW_HIDE);tray();persist();break;case Acknowledge:if(localizedMessage(window,instance,TextId::S099,[&]{return wide(c.timer.title)+L"\n\n"+wide(c.timer.text)+tw(TextId::S098);},true))acknowledge();break;case Snooze5:defer(5);break;case Snooze10:defer(10);break;case Snooze15:defer(15);break;case SnoozeCustom:oneNumber(TextId::S100,c.timer.snoozeMinutes,1,1440,[&](int n){defer(n);});break;case Cat:case Dog:selectPet(id==Dog?1:0);break;case ImportCustom:importCustom(0);break;case SelectCustom:selectProfile(c.activeCustom);break;case Parrot:selectPet(3);break;case Panda:selectPet(4);break;case Dolphin:selectPet(5);break;case WhaleShark:selectPet(6);break;case Rename:{Form f;f.nameMode=true;f.titleId=TextId::S101;f.fields.emplace_back(TextId::S102,wide(c.name));f.apply=[&](auto&v){validatePetName(utf8(v[0].value));c.rename(utf8(v[0].value));tray();updateNameplate();persist();return true;};showForm(f);break;}case Size:scaleForm();break;case Opacity:oneNumber(TextId::S104,c.opacity,20,100,[&](int n){c.opacity=n;render();});break;case Top:c.top=!c.top;clampPosition();placeBubble();persist();break;case Pass:c.pass=!c.pass;applyPass();persist();break;case Visibility:manualHidden=!manualHidden;visibility();if(!manualHidden&&c.timer.pending)reminder();break;case Preferences:preferences();break;case CheckUpdate:if(updates.busy()||handoff.pending()){auto info=updates.latest();if(!info.version.empty())offerUpdate(info);}else{manualCheck=true;updates.check();if(!updates.enabled()){error(wide(updates.message()));manualCheck=false;}}break;case About:aboutWindow.show(window,instance);break;case Exit:if(handoff.pending())handoff.cancel();DestroyWindow(window);break;}
  }
  void menu(POINT p){
   if(menuOpen)return;
@@ -222,7 +239,7 @@ struct App{
   finish();
  }
  void bindUpdateWindow(){
-  updateWindow.bind([this]{if(handoff.pending())return;handoffError.clear();if(updates.phase()==UpdatePhase::Ready&&!updates.stage().empty())installUpdate(updates.stage());else{downloadRequested=true;updates.download();updateWindow.state(0,tw(TextId::S160),true);}},[this]{updateNotified=false;nextUpdateNotice=GetTickCount64()+3600000;},[this]{c.skip=updates.latest().version;persist();},[this]{downloadRequested=false;if(handoff.pending()){handoff.reset();handoffError=tw(TextId::S161);updateWindow.state(0,handoffError,false);}else{updates.cancel();updateWindow.state(updates.progress(),tw(TextId::S162),true);}});
+  updateWindow.bind([this]{if(handoff.pending())return;handoffError.clear();if(updates.phase()==UpdatePhase::Ready&&!updates.stage().empty())installUpdate(updates.stage());else{downloadRequested=true;updates.download();updateWindow.state(0,tw(TextId::S160),true);}},[this]{updateNotified=false;nextUpdateNotice=GetTickCount64()+3600000;},[this]{downloadRequested=false;if(handoff.pending()){handoff.reset();handoffError=tw(TextId::S161);updateWindow.state(0,handoffError,false);}else{updates.cancel();updateWindow.state(updates.progress(),tw(TextId::S162),true);}});
  }
  void updateTick(){
   if(handoff.pending()){
@@ -233,7 +250,7 @@ struct App{
   }
   updateWindow.state(updates.progress(),handoffError.empty()?wide(updates.message()):handoffError,updates.busy());if(updates.busy())return;
   auto status=updates.message();auto info=updates.latest();if(status!=observedStatus||manualCheck){observedStatus=status;if(manualCheck&&!status.empty()){manualCheck=false;if(!info.version.empty())offerUpdate(info);else error(wide(status));}}
-  if(!info.version.empty()&&c.skip!=info.version&&!updateNotified&&GetTickCount64()>=nextUpdateNotice){updateNotified=true;speak(tw(TextId::S167)+wide(info.version)+tw(TextId::S168));}
+  if(!info.version.empty()&&!updateNotified&&GetTickCount64()>=nextUpdateNotice){updateNotified=true;speak(tw(TextId::S167)+wide(info.version)+tw(TextId::S168));}
   if(downloadRequested&&!formOpen&&updates.phase()==UpdatePhase::Ready&&!updates.stage().empty()){downloadRequested=false;installUpdate(updates.stage());}
   else if(downloadRequested&&(updates.phase()==UpdatePhase::Failed||updates.phase()==UpdatePhase::Cancelled)){downloadRequested=false;updateWindow.state(updates.progress(),wide(status),false);}
  }

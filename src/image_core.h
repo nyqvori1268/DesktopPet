@@ -44,6 +44,11 @@ struct PixelRect{int x=0,y=0,w=0,h=0;bool empty()const{return w<=0||h<=0;}};
 struct ImageFrame{std::vector<uint32_t> pixels;unsigned delay=100;};
 struct ImageClip{
  int width=0,height=0;PixelRect crop;std::vector<ImageFrame> frames;
+ PixelRect visibleBounds(size_t first=0,size_t count=~size_t(0))const{
+  int left=width,top=height,right=-1,bottom=-1;const size_t end=first>=frames.size()?frames.size():first+std::min(count,frames.size()-first);
+  for(size_t f=first;f<end;++f){if(width<1||height<1||frames[f].pixels.size()!=size_t(width)*height)continue;for(int y=0;y<height;++y)for(int x=0;x<width;++x)if(frames[f].pixels[size_t(y)*width+x]>>24){left=std::min(left,x);top=std::min(top,y);right=std::max(right,x);bottom=std::max(bottom,y);}}
+  return right<left?PixelRect{}:PixelRect{left,top,right-left+1,bottom-top+1};
+ }
  size_t frameAt(uint64_t elapsed)const{if(frames.empty())return 0;uint64_t total=0;for(auto&f:frames)total+=f.delay;if(!total)return 0;elapsed%=total;for(size_t i=0;i<frames.size();++i){if(elapsed<frames[i].delay)return i;elapsed-=frames[i].delay;}return 0;}
  void findCrop(){crop={};int l=width,t=height,r=-1,b=-1;for(auto&f:frames){if(width<=0||height<=0||f.pixels.size()!=size_t(width)*height)throw std::runtime_error(tr(TextId::S030));for(int y=0;y<height;++y)for(int x=0;x<width;++x)if(f.pixels[size_t(y)*width+x]>>24){l=std::min(l,x);r=std::max(r,x);t=std::min(t,y);b=std::max(b,y);}}if(r>=l&&b>=t)crop={l,t,r-l+1,b-t+1};else throw std::runtime_error(tr(TextId::S031));}
  uint32_t sample(size_t frame,double x,double y)const{
