@@ -1,80 +1,74 @@
 {
  "cat": {
-  "general": ["喵～今天也陪著你。", "慢慢來，我在這裡。", "這裡是我的小角落。"],
-  "happy": ["有你在真好，喵！", "今天也有小小的好事。"],
-  "pet": ["呼嚕呼嚕……", "這裡也要摸摸！", "你的手好溫暖。"],
-  "angry": ["喵！先讓我喘口氣。", "再戳就要收起肉球了！"],
-  "drag": ["飛起來了，喵～", "請輕輕放下我。"],
-  "sleep": ["呼……晚點再一起玩。", "夢裡有小魚乾。"],
-  "remind": ["時間到了，記得照顧自己。", "喵～你的提醒來囉。"]
- },
- "dog": {
-  "general": ["汪！我一直都在。", "一起把今天過好吧。", "尾巴已經準備好搖搖了！"],
-  "happy": ["最喜歡和你一起！", "汪！今天很開心！"],
-  "pet": ["還要摸摸～", "舒服得尾巴停不下來。", "你是我最喜歡的人。"],
-  "angry": ["汪嗚，讓我休息一下啦。", "小鼻子要被戳扁了！"],
-  "drag": ["出發！空中小旅行！", "我抓緊你了，汪！"],
-  "sleep": ["呼嚕……夢見大草地。", "睡一下，再陪你。"],
-  "remind": ["汪！時間到了。", "你的提醒來了，我陪你完成！"]
- },
- "custom": {
   "general": [
-   "我在這裡陪你。",
-   "慢慢來，一起完成吧。"
+   "喵～今天也陪著你。",
+   "慢慢來，我在這裡。",
+   "這裡是我的小角落。"
   ],
   "happy": [
-   "今天也要可愛登場！",
-   "要多陪陪我喔。"
+   "有你在真好，喵！",
+   "今天也有小小的好事。"
+  ],
+  "pet": [
+   "呼嚕呼嚕……",
+   "這裡也要摸摸！",
+   "你的手好溫暖。"
+  ],
+  "angry": [
+   "喵！先讓我喘口氣。",
+   "再戳就要收起肉球了！"
+  ],
+  "drag": [
+   "飛起來了，喵～",
+   "請輕輕放下我。"
+  ],
+  "sleep": [
+   "呼……晚點再一起玩。",
+   "夢裡有小魚乾。"
+  ],
+  "remind": [
+   "時間到了，記得照顧自己。",
+   "喵～你的提醒來囉。"
+  ],
+  "wake": [
+   "喵～伸個懶腰，又能陪你了。",
+   "睡飽了，肉球也準備好了。"
+  ]
+ },
+ "dog": {
+  "general": [
+   "汪！我一直都在。",
+   "一起把今天過好吧。",
+   "尾巴已經準備好搖搖了！"
+  ],
+  "happy": [
+   "最喜歡和你一起！",
+   "汪！今天很開心！"
   ],
   "pet": [
    "還要摸摸～",
-   "這樣好舒服。"
+   "舒服得尾巴停不下來。",
+   "你是我最喜歡的人。"
   ],
   "angry": [
-   "先讓我休息一下！",
-   "不要一直戳啦。"
+   "汪嗚，讓我休息一下啦。",
+   "小鼻子要被戳扁了！"
   ],
   "drag": [
-   "輕輕放下我喔。",
-   "飛起來了～"
+   "出發！空中小旅行！",
+   "我抓緊你了，汪！"
   ],
   "sleep": [
-   "小睡一下，等等再見。",
-   "呼……夢裡見。"
+   "呼嚕……夢見大草地。",
+   "睡一下，再陪你。"
   ],
   "remind": [
-   "你的提醒來囉。",
-   "時間到了，一起行動吧。"
-  ]
- },
- "parrot": {
-  "general": [
-   "啾～今天也想站在你身旁。",
-   "歪歪頭，你在忙什麼呢？"
+   "汪！時間到了。",
+   "你的提醒來了，我陪你完成！"
   ],
-  "happy": [
-   "啾啾！翅膀也開心起來了。",
-   "羽毛蓬蓬，心情很好！"
-  ],
-  "pet": [
-   "頭頂這裡，再摸一下～",
-   "舒服得羽毛都蓬起來了。"
-  ],
-  "angry": [
-   "啾！小鳥也需要安靜休息。",
-   "不要再戳我的羽毛啦！"
-  ],
-  "drag": [
-   "展開翅膀，準備降落～",
-   "請讓我的尾羽輕輕落地。"
-  ],
-  "sleep": [
-   "把小腦袋收好，晚安。",
-   "啾……安靜睡一下。"
-  ],
-  "remind": [
-   "啾！提醒時間到囉。",
-   "振振翅膀，休息一下吧。"
+  "wake": [
+   "汪！尾巴起床囉！",
+   "睡飽了，今天也要陪著你。"
   ]
  },
  "panda": {
@@ -105,6 +99,534 @@
   "remind": [
    "竹子先放一邊，時間到了。",
    "起來伸伸懶腰吧。"
+  ],
+  "wake": [
+   "揉揉黑眼圈，醒來找竹子。",
+   "伸個懶腰，慢慢開始吧。"
+  ]
+ },
+ "languages": {
+  "en-US": {
+   "cat": {
+    "general": [
+     "Meow. I'm keeping you company today.",
+     "Take your time. I'm right here.",
+     "This little corner is mine."
+    ],
+    "happy": [
+     "Life is better with you. Meow!",
+     "There's a little good in every day."
+    ],
+    "pet": [
+     "Purr, purr…",
+     "A little scratch here too, please!",
+     "Your hand is so warm."
+    ],
+    "angry": [
+     "Meow! Give me a little space.",
+     "One more poke and I'm hiding my paws!"
+    ],
+    "drag": [
+     "I'm flying, meow!",
+     "Set me down gently, please."
+    ],
+    "sleep": [
+     "Zzz… Let's play later.",
+     "Dreaming of little fish treats."
+    ],
+    "remind": [
+     "Time's up. Take good care of yourself.",
+     "Meow! Here's your reminder."
+    ],
+    "wake": [
+     "Meow! A big stretch, and I’m back.",
+     "All rested, paws ready."
+    ]
+   },
+   "dog": {
+    "general": [
+     "Woof! I'm always here.",
+     "Let's make today a good one.",
+     "My tail is ready to wag!"
+    ],
+    "happy": [
+     "Being with you is my favorite!",
+     "Woof! What a happy day!"
+    ],
+    "pet": [
+     "More pats, please!",
+     "That feels so good, my tail won't stop.",
+     "You're my favorite human."
+    ],
+    "angry": [
+     "Awoo… Let me rest a little.",
+     "You're going to squish my nose!"
+    ],
+    "drag": [
+     "Off we go! A tiny sky adventure!",
+     "I'm holding on tight. Woof!"
+    ],
+    "sleep": [
+     "Zzz… Dreaming of wide, grassy fields.",
+     "A little nap, then I'll be back."
+    ],
+    "remind": [
+     "Woof! It's time.",
+     "Here's your reminder. We can do it together!"
+    ],
+    "wake": [
+     "Woof! My tail is awake!",
+     "All rested and ready to stay by your side."
+    ]
+   },
+   "panda": {
+    "general": [
+     "Take it slow. Bamboo can wait.",
+     "Your round little companion is here."
+    ],
+    "happy": [
+     "Holding my bamboo and a happy thought.",
+     "Today's bamboo leaves taste extra good!"
+    ],
+    "pet": [
+     "A pat on my round ears feels lovely.",
+     "Could I have one more pat?"
+    ],
+    "angry": [
+     "Let me finish this bite of bamboo first.",
+     "One more poke and I'm taking my bamboo away."
+    ],
+    "drag": [
+     "Round and fluffy, but I can fly too!",
+     "Set me in a cozy little corner."
+    ],
+    "sleep": [
+     "Hugging my bamboo. Zzz…",
+     "A softly rising tummy. Good night."
+    ],
+    "remind": [
+     "Bamboo down. It's time!",
+     "Let's get up and have a good stretch."
+    ],
+    "wake": [
+     "Rubbing my eyes and looking for bamboo.",
+     "A big stretch. Let’s take it slowly."
+    ]
+   },
+   "generic": {
+    "general": [
+     "I'm here to keep you company.",
+     "One step at a time. Let's do this together."
+    ],
+    "happy": [
+     "Ready for another cute entrance!",
+     "Stay with me a little longer."
+    ],
+    "pet": [
+     "More pats, please!",
+     "That feels wonderful."
+    ],
+    "angry": [
+     "Let me take a little break!",
+     "No more poking, please."
+    ],
+    "drag": [
+     "Set me down gently.",
+     "Up, up, and away!"
+    ],
+    "sleep": [
+     "Just a little nap. See you soon.",
+     "Zzz… Meet you in a dream."
+    ],
+    "remind": [
+     "Here's your reminder.",
+     "It's time. Let's get to it!"
+    ],
+    "wake": [
+     "All rested and back by your side.",
+     "Good morning. Let’s ease into the day."
+    ]
+   },
+   "budgie": {
+    "general": [
+     "Chirp! Ready for a little chat?",
+     "Little wings, big plans for today."
+    ],
+    "happy": [
+     "Chirp! My feathers are all fluffed up!",
+     "I feel like singing a happy little song!"
+    ],
+    "pet": [
+     "A gentle head scratch, please. Chirp!",
+     "One more scratch? You’ll ruffle my feathers."
+    ],
+    "angry": [
+     "Chirp! Give my feathers a moment to settle.",
+     "Even little birds get grumpy!"
+    ],
+    "drag": [
+     "Chirp! A first-class flight!",
+     "Easy landing, please. Mind my tail feathers."
+    ],
+    "sleep": [
+     "Tucking my head into my feathers… good night.",
+     "Chirp… dreaming of a bowl full of millet."
+    ],
+    "wake": [
+     "Chirp chirp! Feathers neat and ready to go!",
+     "All rested. Tell me about your day."
+    ],
+    "remind": [
+     "Chirp chirp! It’s the time we agreed on.",
+     "A little wing flap to remind you to take a break."
+    ]
+   },
+   "cockatiel": {
+    "general": [
+     "Chirp! A little head tilt while I listen.",
+     "Crest up and ready for the day!"
+    ],
+    "happy": [
+     "My crest is bouncing with joy!",
+     "Chirp! These orange cheeks give away my good mood."
+    ],
+    "pet": [
+     "A gentle scratch right on top, please.",
+     "That feels lovely. Even my crest is relaxed."
+    ],
+    "angry": [
+     "Crest alert! I need a quiet moment.",
+     "Chirp! Orange cheeks can get grumpy too."
+    ],
+    "drag": [
+     "Tail feathers tucked. Ready to land!",
+     "Chirp! No flapping needed on this flight."
+    ],
+    "sleep": [
+     "My crest is drooping… good night.",
+     "Snuggling my face into soft feathers."
+    ],
+    "wake": [
+     "Chirp! My crest is back on duty!",
+     "A feather shake and a fresh start."
+    ],
+    "remind": [
+     "Chirp! A crest-up reminder: it’s time.",
+     "A little flap so you won’t miss your plan."
+    ]
+   }
+  },
+  "ja-JP": {
+   "cat": {
+    "general": [
+     "にゃあ。今日もそばにいるよ。",
+     "あせらなくていいよ。ここにいるから。",
+     "ここはわたしの小さな特等席。"
+    ],
+    "happy": [
+     "一緒にいられてうれしいにゃ！",
+     "今日も小さないいことがありそう。"
+    ],
+    "pet": [
+     "ごろごろ、ごろごろ……",
+     "ここもなでてほしいにゃ。",
+     "きみの手、あったかいね。"
+    ],
+    "angry": [
+     "にゃっ！ ちょっとひと休みさせて。",
+     "もうつついたら、肉球かくしちゃうよ！"
+    ],
+    "drag": [
+     "飛んでるにゃ～！",
+     "そっと下ろしてね。"
+    ],
+    "sleep": [
+     "すぅ……あとでまた遊ぼうね。",
+     "夢の中には、おさかなのおやつ。"
+    ],
+    "remind": [
+     "時間だよ。自分のことも大切にしてね。",
+     "にゃあ、リマインダーが届いたよ。"
+    ],
+    "wake": [
+     "にゃ～、ぐーっと伸びて、ただいま。",
+     "よく寝た！肉球も準備できたよ。"
+    ]
+   },
+   "dog": {
+    "general": [
+     "ワン！ ずっとそばにいるよ。",
+     "一緒に今日をいい日にしよう。",
+     "しっぽを振る準備はできてるよ！"
+    ],
+    "happy": [
+     "一緒にいるのがいちばん好き！",
+     "ワン！ 今日はうれしい日だね。"
+    ],
+    "pet": [
+     "もっとなでて～！",
+     "気持ちよくて、しっぽが止まらないよ。",
+     "きみがいちばん大好き。"
+    ],
+    "angry": [
+     "くぅん……ちょっと休ませてね。",
+     "お鼻がぺちゃんこになっちゃうよ！"
+    ],
+    "drag": [
+     "出発！ 小さなお空の旅だね。",
+     "しっかりつかまってるよ。ワン！"
+    ],
+    "sleep": [
+     "すぅ……広い草原の夢を見てるよ。",
+     "ちょっと寝たら、また一緒にいようね。"
+    ],
+    "remind": [
+     "ワン！ 時間だよ。",
+     "リマインダーが来たよ。一緒にやろう！"
+    ],
+    "wake": [
+     "ワン！しっぽも起きたよ！",
+     "よく寝た！今日もそばにいるね。"
+    ]
+   },
+   "panda": {
+    "general": [
+     "ゆっくりでいいよ。笹もゆっくり食べよう。",
+     "まんまるな体で、そばにいるね。"
+    ],
+    "happy": [
+     "笹をぎゅっと、うれしさもぎゅっと。",
+     "今日の笹は、いつもよりおいしいな！"
+    ],
+    "pet": [
+     "まるいお耳をなでられるの、気持ちいい。",
+     "もう一回なでてほしいな。"
+    ],
+    "angry": [
+     "この笹をひと口食べてからにして～。",
+     "もうつついたら、笹を抱えてあっち向いちゃうよ。"
+    ],
+    "drag": [
+     "まんまるでも、ふわっと飛べるんだ。",
+     "居心地のいい隅っこに下ろしてね。"
+    ],
+    "sleep": [
+     "笹を抱えて、すぅ……",
+     "おなかがふわふわ。おやすみ。"
+    ],
+    "remind": [
+     "笹はいったん置いて。時間だよ。",
+     "起きて、ぐーっとのびをしよう。"
+    ],
+    "wake": [
+     "目をこすって、竹を探そう。",
+     "ぐーっと伸びて、のんびり始めよう。"
+    ]
+   },
+   "generic": {
+    "general": [
+     "ここでそばにいるよ。",
+     "ゆっくり、一緒に進めよう。"
+    ],
+    "happy": [
+     "今日もかわいく登場！",
+     "もう少しかまってほしいな。"
+    ],
+    "pet": [
+     "もっとなでて～。",
+     "とっても気持ちいいね。"
+    ],
+    "angry": [
+     "ちょっと休ませて！",
+     "もうつつかないで～。"
+    ],
+    "drag": [
+     "そっと下ろしてね。",
+     "ふわっと浮かんだよ～！"
+    ],
+    "sleep": [
+     "ちょっとお昼寝。またあとでね。",
+     "すぅ……夢の中で会おうね。"
+    ],
+    "remind": [
+     "リマインダーが来たよ。",
+     "時間だよ。一緒に始めよう！"
+    ],
+    "wake": [
+     "よく寝た！またそばにいるよ。",
+     "おはよう。ゆっくり始めよう。"
+    ]
+   },
+   "budgie": {
+    "general": [
+     "ピヨピヨ！今日もおしゃべりしよう。",
+     "小さな翼で、今日もそばにいるよ。"
+    ],
+    "happy": [
+     "ピヨ！うれしくて羽がふわふわ！",
+     "ごきげんな歌を歌いたいな！"
+    ],
+    "pet": [
+     "頭をやさしくなでてね、ピヨ。",
+     "もう少しだけ？羽がくしゃくしゃになるよ。"
+    ],
+    "angry": [
+     "ピヨ！羽が落ち着くまで待って。",
+     "小鳥だって、むっとするんだよ！"
+    ],
+    "drag": [
+     "ピヨ～！送迎つきの空の旅だね。",
+     "尾羽に気をつけて、そっと着陸してね。"
+    ],
+    "sleep": [
+     "羽に頭をうずめて……おやすみ。",
+     "ピヨ……夢の中には粟がいっぱい。"
+    ],
+    "wake": [
+     "ピヨピヨ！羽を整えて、準備できたよ！",
+     "よく寝た！今日の話を聞かせて。"
+    ],
+    "remind": [
+     "ピヨピヨ！約束の時間だよ。",
+     "ぱたぱた！ひと休みも忘れずにね。"
+    ]
+   },
+   "cockatiel": {
+    "general": [
+     "ピッ！首をかしげて、お話を聞くよ。",
+     "冠羽を立てて、今日も元気！"
+    ],
+    "happy": [
+     "うれしくて冠羽がぴょこん！",
+     "ピッ！オレンジのほっぺもごきげんだよ。"
+    ],
+    "pet": [
+     "頭のここを、やさしくかいてね。",
+     "気持ちよくて、冠羽もゆるんじゃう。"
+    ],
+    "angry": [
+     "冠羽警報！ちょっと静かにさせて。",
+     "ピッ！オレンジのほっぺも怒るんだよ。"
+    ],
+    "drag": [
+     "尾羽をそろえて、着陸準備！",
+     "ピッ！今日は羽ばたかなくても飛べるね。"
+    ],
+    "sleep": [
+     "冠羽がしょんぼり……おやすみ。",
+     "やわらかい羽に顔をうずめるね。"
+    ],
+    "wake": [
+     "ピッ！冠羽も起きたよ！",
+     "羽をふるって、また始めよう。"
+    ],
+    "remind": [
+     "ピッ！冠羽からのお知らせ、時間だよ。",
+     "ぱたぱた！予定を忘れないでね。"
+    ]
+   }
+  }
+ },
+ "generic": {
+  "general": [
+   "我在這裡陪你。",
+   "慢慢來，一起完成吧。"
+  ],
+  "happy": [
+   "今天也要可愛登場！",
+   "要多陪陪我喔。"
+  ],
+  "pet": [
+   "還要摸摸～",
+   "這樣好舒服。"
+  ],
+  "angry": [
+   "先讓我休息一下！",
+   "不要一直戳啦。"
+  ],
+  "drag": [
+   "輕輕放下我喔。",
+   "飛起來了～"
+  ],
+  "sleep": [
+   "小睡一下，等等再見。",
+   "呼……夢裡見。"
+  ],
+  "remind": [
+   "你的提醒來囉。",
+   "時間到了，一起行動吧。"
+  ],
+  "wake": [
+   "睡飽了，又可以陪你了。",
+   "早安，慢慢開始吧。"
+  ]
+ },
+ "budgie": {
+  "general": [
+   "啾啾！今天也一起聊天吧。",
+   "小小翅膀，陪你度過大大的一天。"
+  ],
+  "happy": [
+   "啾！開心得羽毛都蓬起來了！",
+   "想唱一首小小的快樂歌！"
+  ],
+  "pet": [
+   "輕輕摸摸頭就好，啾～",
+   "再摸一下？羽毛要亂掉啦。"
+  ],
+  "angry": [
+   "啾！先讓我的羽毛冷靜一下。",
+   "小鳥也有自己的脾氣喔！"
+  ],
+  "drag": [
+   "啾～這趟飛行有人接送！",
+   "請輕輕降落，我的尾羽很珍貴。"
+  ],
+  "sleep": [
+   "把頭藏進羽毛裡……晚安。",
+   "啾……夢裡有滿滿的小米。"
+  ],
+  "wake": [
+   "啾啾！整理羽毛，準備開工！",
+   "睡飽了，來聊聊今天吧。"
+  ],
+  "remind": [
+   "啾啾！約好的時間到囉。",
+   "拍拍翅膀提醒你，休息也很重要。"
+  ]
+ },
+ "cockatiel": {
+  "general": [
+   "啾～歪歪頭，聽你說說話。",
+   "頭冠豎起來，今天也精神滿滿！"
+  ],
+  "happy": [
+   "開心得頭冠都跳起來了！",
+   "啾！橘色腮紅也藏不住好心情。"
+  ],
+  "pet": [
+   "頭頂這裡，輕輕抓一下～",
+   "舒服得頭冠都放鬆了。"
+  ],
+  "angry": [
+   "頭冠警報！先讓我安靜一下。",
+   "啾！橘色臉頰也會鬧脾氣。"
+  ],
+  "drag": [
+   "尾羽收好，準備降落！",
+   "啾～這次不用自己拍翅膀。"
+  ],
+  "sleep": [
+   "頭冠垂下來了……晚安。",
+   "把臉埋進柔柔的羽毛裡。"
+  ],
+  "wake": [
+   "啾！頭冠重新上線！",
+   "抖抖羽毛，又是新的一刻。"
+  ],
+  "remind": [
+   "啾！頭冠提醒：時間到了。",
+   "拍拍翅膀，別忘了你的約定。"
   ]
  }
 }

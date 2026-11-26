@@ -9,6 +9,16 @@ namespace pet {
 namespace fs=std::filesystem;
 std::wstring wide(const std::string&s);
 std::string utf8(const std::wstring&s);
+inline const wchar_t* tw(TextId id){
+ static const auto cache=[](){std::array<std::array<std::wstring,3>,size_t(TextId::Count)> strings;for(size_t i=0;i<strings.size();++i)for(int language=0;language<3;++language)strings[i][size_t(language)]=wide(tr(TextId(i),Language(language)));return strings;}();
+ return cache[size_t(id)][size_t(uiLanguage())].c_str();
+}
+inline std::wstring wf(TextId id,std::initializer_list<std::wstring> arguments){std::vector<std::string> strings;for(auto&argument:arguments)strings.push_back(utf8(argument));return wide(formatText(id,strings));}
+inline const wchar_t* uiFontName(){return uiLanguage()==Language::JaJP?L"Yu Gothic UI":uiLanguage()==Language::EnUS?L"Segoe UI":L"Microsoft JhengHei UI";}
+inline constexpr UINT LanguageChanged=WM_APP+20;
+Language windowsDisplayLanguage();
+void broadcastLanguageChange(Language previous);
+
 fs::path executable();
 fs::path appData();
 fs::path settingsPath();

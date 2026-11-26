@@ -72,3 +72,17 @@ Windows CTest 加入實際 handle 繼承、程序身分、準備就緒／取消�
 ## 後續版本
 
 修改 CMake 版本、`src/pet.rc` 檔案與產品版本、CHANGELOG。使用同一組可信金鑰、完成建置與驗收，再推送新的 `vX.Y.Z` Tag。不得覆寫已發布版本或重用標籤。
+
+
+## v1.2.0 的兩種 ZIP
+
+`tools/Package.ps1` 從 CMake 讀取版號，自動產生：
+
+- **手動下載：`DesktopPet_v{version}.zip`**。每個 entry 都在同名 `DesktopPet_v{version}/` 根資料夾，七檔為兩個 EXE、`data/dialogue.json`、README、CHANGELOG、LICENSE、THIRD_PARTY_NOTICES。
+- **自動更新：`DesktopPet-windows-x64.zip`**。維持既有五個平坦路徑、不加入 LICENSE 路徑；README 附完整 MIT 與元件聲明。`update.json` 的 asset／size／sha256 僅對應此包，不指向手動包。
+
+兩包均採明確檔案清單，不包含 config、自訂素材、私鑰或暫存資料。打包時驗證完整 entry 清單、根路徑及逐檔 SHA-256 與 staging 一致；自動包另由原本原生安全解析器驗證。`SHA256SUMS.txt` 含兩包；手動包沒有額外簽章協定，不可把它交給自動更新器。
+
+Actions 的一般 Push／PR 產物含兩包與雜湊；正式 Tag 通過原有簽署檢查後，上傳兩包、雜湊、update.json／update.sig，使用自動產生的 RELEASE_NOTES.md 優先引導下載版本命名包。本次不建立 Tag 或 Release。
+
+v1.1.1 → v1.2.0 仍下載同名五檔自動包，ECDSA P-256、原有可信金鑰、SHA-256、交易／回滾與設定位置不變。新欄位均可選，三組既有角色與計時資料保留。新版 Updater 接受舊八參數交接；新版配對元件可額外傳入介面語言，原有程序身分檢查不變。簽署更新、故障回滾及兩版端對端升級仍需 Windows 實測。

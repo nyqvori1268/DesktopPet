@@ -9,11 +9,11 @@ inline ParentDecision parentDecision(bool identity,bool exited,bool timeout){if(
 inline std::string trimLine(std::string s){while(!s.empty()&&(s.back()=='\r'||s.back()==' '||s.back()=='\t'))s.pop_back();auto p=s.find_first_not_of(" \t");return p==std::string::npos?std::string{}:s.substr(p);}
 inline std::optional<Version> noteHeading(std::string line){line=trimLine(line);if(line.rfind("## ",0)!=0)return {};line=trimLine(line.substr(3));if(!line.empty()&&line.front()=='[')line.erase(0,1);size_t n=0;while(n<line.size()&&((line[n]>='0'&&line[n]<='9')||line[n]=='.'||line[n]=='v'))++n;return Version::parse(line.substr(0,n));}
 inline std::string versionNotes(const std::string&markdown,const std::string&version){
- auto wanted=Version::parse(version);if(!wanted)return "此版本未提供更新說明。";
+ auto wanted=Version::parse(version);if(!wanted)return tr(TextId::S242);
  std::istringstream input(markdown);std::string line,out;bool found=false,hasVersions=false;
  while(std::getline(input,line)){auto heading=noteHeading(line);if(heading){hasVersions=true;if(found)break;if(heading->tuple()==wanted->tuple())found=true;continue;}if(found)out+=line+'\n';}
  if(!found&&!hasVersions)out=markdown;
- return trimLine(out).empty()?"此版本未提供更新說明。":out;
+ return trimLine(out).empty()?tr(TextId::S242):out;
 }
 inline std::string readableNotes(const std::string&markdown,const std::string&version){
  std::istringstream input(versionNotes(markdown,version));std::string line,out;

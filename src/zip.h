@@ -5,7 +5,7 @@ namespace pet {
 struct ZipFile{std::string name;size_t offset=0,size=0;};
 // Intentionally accepts only our deterministic STORE ZIP, never invokes a shell/extractor.
 inline std::vector<ZipFile> inspectZip(const std::vector<unsigned char>&b){
- auto fail=[](){throw std::runtime_error("Unsafe or unsupported ZIP");};
+ auto fail=[](){throw std::runtime_error(tr(TextId::S255));};
  auto u16=[&](size_t p)->uint16_t{if(p>b.size()||b.size()-p<2)fail();return uint16_t(b[p]|(b[p+1]<<8));};
  auto u32=[&](size_t p)->uint32_t{if(p>b.size()||b.size()-p<4)fail();return uint32_t(b[p])|(uint32_t(b[p+1])<<8)|(uint32_t(b[p+2])<<16)|(uint32_t(b[p+3])<<24);};
  if(b.size()<22||b.size()>15*1024*1024)fail();

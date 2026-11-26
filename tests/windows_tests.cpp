@@ -24,7 +24,8 @@ static void trustCryptoTests(){
  std::cout<<"PASS native ECDSA trust-policy authorization, backup rotation and revocation\n";
 }
 int wmain(int argc,wchar_t**argv){try{
- if(argc==9&&std::wstring(argv[1])==L"--handoff"){
+ if((argc==9||argc==11)&&std::wstring(argv[1])==L"--handoff"){
+  if(argc==11)require(std::wstring(argv[9])==L"--language"&&std::wstring(argv[10])==wide(languageCode(uiLanguage())),"optional locale preserves legacy handoff arguments");
   if(fs::path(argv[2]).filename()==L"exit-before-ready")return 4;
   HANDLE parent=reinterpret_cast<HANDLE>(uintptr_t(std::stoull(argv[6]))),accepted=reinterpret_cast<HANDLE>(uintptr_t(std::stoull(argv[7]))),abort=reinterpret_cast<HANDLE>(uintptr_t(std::stoull(argv[8])));
   if(!validateUpdateParent(parent,DWORD(std::stoul(argv[4])),std::stoull(argv[5]),fs::path(argv[3])/L"windows_tests.exe"))return 5;
@@ -38,6 +39,7 @@ int wmain(int argc,wchar_t**argv){try{
   std::cout<<"PASS package structure, CRC, allowlist, verified buffer and mutation rejection\n";return 0;
  }
  if(argc==5&&std::wstring(argv[1])==L"--signature"){require(verifySignature(readBytes(argv[3]),readBytes(argv[4]),utf8(argv[2])),"PowerShell/native ECDSA interoperability");std::cout<<"PASS PowerShell signature\n";return 0;}
+ for(int lang=0;lang<3;++lang){setUILanguage(Language(lang));require(utf8(tw(TextId::Close))==tr(TextId::Close,Language(lang)),"native cached translations switch immediately");require(std::wstring(uiFontName()).size()>0,"locale font selected");}setUILanguage(Language::ZhTW);
  require(validateUpdateParent(GetCurrentProcess(),GetCurrentProcessId(),processCreation(GetCurrentProcess()),executable()),"live self identity proof");
  require(!validateUpdateParent(GetCurrentProcess(),GetCurrentProcessId(),processCreation(GetCurrentProcess())+1,executable()),"reused PID/creation mismatch rejected");
  require(!validateUpdateParent(GetCurrentProcess(),GetCurrentProcessId()+1,processCreation(GetCurrentProcess()),executable()),"unrelated PID rejected");

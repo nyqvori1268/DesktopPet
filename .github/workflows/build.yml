@@ -42,8 +42,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         with:
-          name: DesktopPet-windows-x64
-          path: dist/DesktopPet-windows-x64.zip
+          name: DesktopPet-portable
+          path: |
+            dist/DesktopPet_v*.zip
+            dist/DesktopPet-windows-x64.zip
+            dist/SHA256SUMS.txt
       - name: Signed release package
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
@@ -71,5 +74,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create $env:GITHUB_REF_NAME dist/DesktopPet-windows-x64.zip dist/SHA256SUMS.txt dist/update.json dist/update.sig --repo '${{ github.repository }}' --title "DesktopPet $env:GITHUB_REF_NAME" --generate-notes --latest
+          $manual = @(Get-ChildItem dist/DesktopPet_v*.zip)
+          if ($manual.Count -ne 1) { throw 'Exactly one versioned portable ZIP required.' }
+          gh release create $env:GITHUB_REF_NAME "$($manual[0].FullName)" dist/DesktopPet-windows-x64.zip dist/SHA256SUMS.txt dist/update.json dist/update.sig --repo '${{ github.repository }}' --title "DesktopPet $env:GITHUB_REF_NAME" --notes-file dist/RELEASE_NOTES.md --latest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

@@ -22,7 +22,7 @@ public:
  void cancel(){cancelFlag=true;}
  void check();void download();
  UpdateInfo latest(){std::lock_guard<std::mutex> lock(mutex);return info;}
- std::string message(){std::lock_guard<std::mutex> lock(mutex);return status;}
+ std::string message(){std::lock_guard<std::mutex> lock(mutex);return currentSystemText(status);}
  fs::path stage(){std::lock_guard<std::mutex> lock(mutex);return staged;}
 };
 }

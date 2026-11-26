@@ -5,3 +5,15 @@
 #define PET_PUBLIC_KEY "@DESKTOPPET_PUBLIC_KEY@"
 
 #define PET_BACKUP_PUBLIC_KEY "@DESKTOPPET_BACKUP_PUBLIC_KEY@"
+
+#define PET_DEVELOPER "@DESKTOPPET_DEVELOPER_ESCAPED@"
+#define PET_COPYRIGHT "@DESKTOPPET_COPYRIGHT_ESCAPED@"
+#define PET_PROJECT_URL "https://github.com/@DESKTOPPET_OWNER@/@DESKTOPPET_REPOSITORY@"
+#define PET_LICENSE_TEXT "@license_text_ESCAPED@"
+#if defined(_M_ARM64) || defined(__aarch64__)
+#define PET_ARCH "ARM64"
+#elif defined(_WIN64) || defined(__x86_64__)
+#define PET_ARCH "x64"
+#else
+#define PET_ARCH "x86"
+#endif

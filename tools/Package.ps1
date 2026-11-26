@@ -14,7 +14,10 @@ if (Test-Path $Output) { Remove-Item $Output -Recurse -Force }
 New-Item -ItemType Directory -Force "$stage/data" | Out-Null
 Copy-Item "$Build/Release/DesktopPet.exe", "$Build/Release/Updater.exe" $stage
 Copy-Item data/dialogue.json "$stage/data/"
-Copy-Item README.md, CHANGELOG.md $stage
+Copy-Item README.md, CHANGELOG.md, LICENSE, THIRD_PARTY_NOTICES.md $stage
+# Preserve the five-file updater whitelist while carrying all required notices.
+$readme = (Get-Content README.md -Raw) + "`n`n## MIT License`n`n" + (Get-Content LICENSE -Raw) + "`n`n" + (Get-Content THIRD_PARTY_NOTICES.md -Raw)
+[IO.File]::WriteAllText((Join-Path $stage 'README.md'),$readme,[Text.UTF8Encoding]::new($false))
 # Files are explicitly allowlisted; no directory records, deflate, timestamp extras, config or private keys.
 Add-Type -AssemblyName System.IO.Compression
 $zip = [IO.Path]::GetFullPath((Join-Path $Output 'DesktopPet-windows-x64.zip'))
@@ -29,6 +32,37 @@ try {
   try { $source.CopyTo($dest) } finally { $source.Dispose(); $dest.Dispose() }
  }
 } finally { $archive.Dispose(); $stream.Dispose() }
+# A separate human-download package; it never replaces the updater asset.
+$portableName = "DesktopPet_v$Version"
+$manualZip = [IO.Path]::GetFullPath((Join-Path $Output "$portableName.zip"))
+$manualStream = [IO.File]::Create($manualZip)
+$manualArchive = [IO.Compression.ZipArchive]::new($manualStream,[IO.Compression.ZipArchiveMode]::Create)
+try {
+ foreach ($name in @('DesktopPet.exe','Updater.exe','data/dialogue.json','README.md','CHANGELOG.md','LICENSE','THIRD_PARTY_NOTICES.md')) {
+  $entry=$manualArchive.CreateEntry("$portableName/$name",[IO.Compression.CompressionLevel]::NoCompression)
+  $entry.LastWriteTime=[DateTimeOffset]::new(2026,1,1,0,0,0,[TimeSpan]::Zero);$entry.ExternalAttributes=0
+  $destination=$entry.Open();$source=[IO.File]::OpenRead((Join-Path $stage $name))
+  try { $source.CopyTo($destination) } finally { $source.Dispose();$destination.Dispose() }
+ }
+} finally { $manualArchive.Dispose();$manualStream.Dispose() }
+# Verify exact roots and payload identity for BOTH distributions before signing.
+function Test-Archive([string]$Path,[string]$Prefix,[string[]]$Names) {
+ $file=[IO.File]::OpenRead($Path);$reader=[IO.Compression.ZipArchive]::new($file,[IO.Compression.ZipArchiveMode]::Read)
+ try {
+  if ($reader.Entries.Count -ne $Names.Count) { throw 'Unexpected archive entry count.' }
+  $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+  foreach ($entry in $reader.Entries) {
+   if (!$seen.Add($entry.FullName) -or !$entry.FullName.StartsWith($Prefix,[StringComparison]::Ordinal)) { throw 'Duplicate or unexpected ZIP root.' }
+   $name=$entry.FullName.Substring($Prefix.Length)
+   if ($Names -cnotcontains $name) { throw 'Unexpected archive file.' }
+   $content=$entry.Open();$hasher=[Security.Cryptography.SHA256]::Create()
+   try { $actual=[Convert]::ToHexString($hasher.ComputeHash($content)) } finally { $content.Dispose();$hasher.Dispose() }
+   if ($actual -cne (Get-FileHash -Algorithm SHA256 (Join-Path $stage $name)).Hash) { throw 'Archive payload mismatch.' }
+  }
+ } finally { $reader.Dispose();$file.Dispose() }
+}
+Test-Archive $zip '' @('DesktopPet.exe','Updater.exe','data/dialogue.json','README.md','CHANGELOG.md')
+Test-Archive $manualZip "$portableName/" @('DesktopPet.exe','Updater.exe','data/dialogue.json','README.md','CHANGELOG.md','LICENSE','THIRD_PARTY_NOTICES.md')
 & "$Build/Release/windows_tests.exe" --package $zip
 if ($LASTEXITCODE) { throw 'Native package security checks failed.' }
 # Sign only this version's release notes; old clients also receive concise notes.
@@ -41,7 +75,19 @@ if (!$releaseNotes) { throw 'Current version release notes are empty.' }
 $size = (Get-Item $zip).Length
 if ($size -gt 15MB) { throw 'Release exceeds 15 MiB.' }
 $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant()
-[IO.File]::WriteAllText((Join-Path $Output 'SHA256SUMS.txt'), "$hash  DesktopPet-windows-x64.zip`n", [Text.UTF8Encoding]::new($false))
+$manualHash = (Get-FileHash -Algorithm SHA256 $manualZip).Hash.ToLowerInvariant()
+if ((Get-Item $manualZip).Length -gt 15MB) { throw 'Portable release exceeds 15 MiB.' }
+[IO.File]::WriteAllText((Join-Path $Output 'SHA256SUMS.txt'), "$hash  DesktopPet-windows-x64.zip`n$manualHash  $portableName.zip`n", [Text.UTF8Encoding]::new($false))
+$repository = $env:GITHUB_REPOSITORY
+if (!$repository) {
+ $buildCache=Get-Content "$Build/CMakeCache.txt" -Raw
+ $owner=[regex]::Match($buildCache,'(?m)^DESKTOPPET_OWNER:STRING=([^\r\n]+)').Groups[1].Value
+ $repo=[regex]::Match($buildCache,'(?m)^DESKTOPPET_REPOSITORY:STRING=([^\r\n]+)').Groups[1].Value
+ if ($owner -and $repo) { $repository="$owner/$repo" }
+}
+$manualLink=if ($repository) { "[$portableName.zip](https://github.com/$repository/releases/download/v$Version/$portableName.zip)" } else { "$portableName.zip" }
+$releaseDescription="## Download / 下載 / ダウンロード`n`nDownload $manualLink for manual installation. Extract the whole $portableName folder and run DesktopPet.exe.`n`n手動下載請選擇 $manualLink，解壓後執行同名資料夾內的 DesktopPet.exe。`n`n手動ダウンロードは $manualLink を選び、同名フォルダー全体を展開して DesktopPet.exe を実行してください。`n`nDesktopPet-windows-x64.zip is reserved for the compatible automatic updater. update.json still points to this flat five-file package. SHA256SUMS.txt covers both ZIP files.`n`n## Changes / 更新內容 / 変更内容`n`n$releaseNotes`n"
+[IO.File]::WriteAllText((Join-Path $Output 'RELEASE_NOTES.md'),$releaseDescription,[Text.UTF8Encoding]::new($false))
 if ($Sign) {
  if (!$env:UPDATE_SIGNING_KEY -or !$env:DESKTOPPET_PUBLIC_KEY) { throw 'Signing key/public key required; refusing unsigned release.' }
  $key = [Security.Cryptography.ECDsa]::Create()
@@ -78,4 +124,5 @@ if ($Sign) {
  } finally { $key.Dispose() }
 }
 Remove-Item $stage -Recurse -Force
-Write-Output "Packaged $zip ($size bytes)"
+Write-Output "Packaged updater: $zip ($size bytes)"
+Write-Output "Packaged manual download: $manualZip"

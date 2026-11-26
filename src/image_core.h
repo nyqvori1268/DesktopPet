@@ -10,8 +10,8 @@ inline bool customFileName(const std::string&s){if(s.size()!=68)return false;ret
 inline int customState(Action a){switch(a){case Action::Blink:return 1;case Action::Sleep:return 2;case Action::Happy:case Action::Shy:return 3;case Action::Angry:return 4;case Action::Pet:return 5;case Action::Remind:return 6;default:return 0;}}
 struct EncodedImage{unsigned width=0,height=0,frames=0;bool gif=false;};
 inline EncodedImage inspectImage(const std::vector<unsigned char>&b){
- if(b.empty()||b.size()>8*1024*1024)throw std::runtime_error("素材上限為 8 MiB");
- auto fail=[](){throw std::runtime_error("PNG／GIF 格式或尺寸不支援");};
+ if(b.empty()||b.size()>8*1024*1024)throw std::runtime_error(tr(TextId::S027));
+ auto fail=[](){throw std::runtime_error(tr(TextId::S028));};
  auto le16=[&](size_t i){if(i>b.size()||b.size()-i<2)fail();return unsigned(b[i])|(unsigned(b[i+1])<<8);};
  auto be32=[&](size_t i){if(i>b.size()||b.size()-i<4)fail();return (unsigned(b[i])<<24)|(unsigned(b[i+1])<<16)|(unsigned(b[i+2])<<8)|unsigned(b[i+3]);};
  EncodedImage out;
@@ -37,7 +37,7 @@ inline EncodedImage inspectImage(const std::vector<unsigned char>&b){
   if(!ended||p!=b.size()||!out.frames)fail();
  }else fail();
  if(!out.width||!out.height||out.width>2048||out.height>2048)fail();
- if(uint64_t(out.width)*out.height*out.frames*4>16*1024*1024)throw std::runtime_error("素材解碼畫布總量超過 16 MiB，請先縮小尺寸或減少影格");
+ if(uint64_t(out.width)*out.height*out.frames*4>16*1024*1024)throw std::runtime_error(tr(TextId::S029));
  return out;
 }
 struct PixelRect{int x=0,y=0,w=0,h=0;bool empty()const{return w<=0||h<=0;}};
@@ -45,7 +45,7 @@ struct ImageFrame{std::vector<uint32_t> pixels;unsigned delay=100;};
 struct ImageClip{
  int width=0,height=0;PixelRect crop;std::vector<ImageFrame> frames;
  size_t frameAt(uint64_t elapsed)const{if(frames.empty())return 0;uint64_t total=0;for(auto&f:frames)total+=f.delay;if(!total)return 0;elapsed%=total;for(size_t i=0;i<frames.size();++i){if(elapsed<frames[i].delay)return i;elapsed-=frames[i].delay;}return 0;}
- void findCrop(){crop={};int l=width,t=height,r=-1,b=-1;for(auto&f:frames){if(width<=0||height<=0||f.pixels.size()!=size_t(width)*height)throw std::runtime_error("Invalid image frame");for(int y=0;y<height;++y)for(int x=0;x<width;++x)if(f.pixels[size_t(y)*width+x]>>24){l=std::min(l,x);r=std::max(r,x);t=std::min(t,y);b=std::max(b,y);}}if(r>=l&&b>=t)crop={l,t,r-l+1,b-t+1};else throw std::runtime_error("素材全部透明，無可顯示內容");}
+ void findCrop(){crop={};int l=width,t=height,r=-1,b=-1;for(auto&f:frames){if(width<=0||height<=0||f.pixels.size()!=size_t(width)*height)throw std::runtime_error(tr(TextId::S030));for(int y=0;y<height;++y)for(int x=0;x<width;++x)if(f.pixels[size_t(y)*width+x]>>24){l=std::min(l,x);r=std::max(r,x);t=std::min(t,y);b=std::max(b,y);}}if(r>=l&&b>=t)crop={l,t,r-l+1,b-t+1};else throw std::runtime_error(tr(TextId::S031));}
  uint32_t sample(size_t frame,double x,double y)const{
   if(frame>=frames.size()||crop.empty())return 0;
   x=std::clamp(x,double(crop.x),double(crop.x+crop.w-1));y=std::clamp(y,double(crop.y),double(crop.y+crop.h-1));
@@ -64,5 +64,5 @@ inline ImageClip trimClip(ImageClip original){
  return out;
 }
 inline unsigned gifDelay(unsigned hundredths){return std::clamp(hundredths,4u,1000u)*10;}
-inline int decodeSide(unsigned frames){if(!frames||frames>120)throw std::runtime_error("GIF 需為 1～120 影格");return std::min(256,int(std::sqrt((2.*1024*1024)/(4.*frames))));}
+inline int decodeSide(unsigned frames){if(!frames||frames>120)throw std::runtime_error(tr(TextId::S032));return std::min(256,int(std::sqrt((2.*1024*1024)/(4.*frames))));}
 }
