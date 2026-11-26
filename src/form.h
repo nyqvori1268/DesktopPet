@@ -46,7 +46,18 @@ struct Form{
  }
  void layoutEditor(){
   if(!hwnd||!tabs||fields.empty())return;RECT client{};GetClientRect(hwnd,&client);auto previous=font;font=CreateFontW(-px(14),0,0,0,FW_NORMAL,0,0,0,DEFAULT_CHARSET,0,0,0,0,uiFontName());HDC dc=GetDC(hwnd);auto old=SelectObject(dc,font);RECT help{0,0,std::max(1,int(client.right)-px(32)),0};auto caption=fields[0].caption();DrawTextW(dc,caption.c_str(),-1,&help,DT_CALCRECT|DT_WORDBREAK|DT_NOPREFIX);SelectObject(dc,old);ReleaseDC(hwnd,dc);auto plan=dialogueEditorLayout(int(client.right),int(client.bottom),dpi,int(help.bottom));HDWP batch=BeginDeferWindowPos(7);auto place=[&](HWND child,UiRect r){positionChild(batch,child,r.x,r.y,r.w,r.h);SendMessageW(child,WM_SETFONT,WPARAM(font),FALSE);};
-  place(tabs,plan.tabs);TabCtrl_SetPadding(tabs,0,0);TabCtrl_SetItemSize(tabs,languageTabWidth(plan.tabs.w,dpi),px(30));place(fields[0].labelWindow,plan.instructions);place(fields[0].input,plan.input);place(GetDlgItem(hwnd,IDHELP),plan.preview);place(GetDlgItem(hwnd,IDOK),plan.accept);place(GetDlgItem(hwnd,IDCANCEL),plan.cancel);if(batch)EndDeferWindowPos(batch);if(previous)DeleteObject(previous);RedrawWindow(hwnd,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);
+  place(tabs,plan.tabs);place(fields[0].labelWindow,plan.instructions);place(fields[0].input,plan.input);place(GetDlgItem(hwnd,IDHELP),plan.preview);place(GetDlgItem(hwnd,IDOK),plan.accept);place(GetDlgItem(hwnd,IDCANCEL),plan.cancel);if(batch)EndDeferWindowPos(batch);
+  // Size tabs only after the deferred layout has committed the actual client width.
+  // Native button-style tabs include borders and inter-item spacing beyond item size.
+  RECT tabClient{};GetClientRect(tabs,&tabClient);TabCtrl_SetPadding(tabs,0,0);
+  int tabWidth=languageTabWidth(std::max(1,int(tabClient.right-tabClient.left)-px(24)),dpi);
+  TabCtrl_SetItemSize(tabs,tabWidth,px(30));
+  // Keep multiline layout as a real fit check, rather than hiding overflow.
+  const int minTabWidth=px(72),step=std::max(1,px(4));
+  while(TabCtrl_GetRowCount(tabs)>1&&tabWidth>minTabWidth){
+   tabWidth=std::max(minTabWidth,tabWidth-step);TabCtrl_SetItemSize(tabs,tabWidth,px(30));
+  }
+  if(previous)DeleteObject(previous);RedrawWindow(hwnd,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);
  }
  static LRESULT CALLBACK proc(HWND window,UINT message,WPARAM wp,LPARAM lp){
   auto self=reinterpret_cast<Form*>(GetWindowLongPtrW(window,GWLP_USERDATA));if(message==WM_NCCREATE){self=static_cast<Form*>(reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams);self->hwnd=window;SetWindowLongPtrW(window,GWLP_USERDATA,LONG_PTR(self));}if(!self)return DefWindowProcW(window,message,wp,lp);
