@@ -93,3 +93,13 @@ v1.1.1 → v1.2.0 仍下載同名五檔自動包，ECDSA P-256、原有可信金
 新增的 assets/ocean/*.ocp 由生成的 ocean.rc 僅內嵌 DesktopPet.exe。建置時需完整六檔；不把它們以額外 entry 加進 ZIP。兩種 ZIP 都已包含 DesktopPet.exe，因此仍沿用原路徑清單、update.json asset 名稱、SHA-256、ECDSA P-256、主要／備援金鑰與交易／回滾協定。v1.2.0 客戶端可使用相同五檔平坦包更新，免修改舊白名單。手動包自動命名為 DesktopPet_v1.3.0.zip 並含同名根資料夾。
 
 CTest 新增 ocean_embedded：以 Windows 的資料資源載入方式（不執行 EXE）檢查發行主程式實際含六款正確素材。核心測試另外檢查所有影格、資源異常及七物種對話。不要將來源 GIF、自訂寵物、config 或開發工具增列至更新包；發布體積及 v1.2.0 → v1.3.0 簽署更新仍需 Windows 實測。
+
+## v1.3.0 安全強化（不變更版本）
+
+新增檢查：`security_tests`、`python tests/security_tool_tests.py`、`python tools/Check-Sensitive.py`、Windows `dll_search_policy`／原生交易中斷測試、`./tools/Test-PE.ps1`。CMake 與 Package.ps1 保持原有金鑰、版本來源與雙 ZIP；SECURITY.md 全文追加至 staging README，不新增更新包白名單路徑。
+
+Actions 的官方 commit 來源見 [安全驗證紀錄](SECURITY_TESTING.md)。發行僅 Push 正式 Tag：同一建置的 immutable artifact ID → 分權限產生 GitHub artifact attestation → 發布 job 逐檔驗證儲存庫／workflow／Tag／source SHA／hosted runner → gh release --verify-tag。PR 沒有 OIDC、簽署 Secret 或發布權限。請在儲存庫設定維護分支／Tag 規則，定期審查固定 Actions 版本。
+
+本地交易 v2 使用同使用者 DPAPI，簽署 Release 的 schema／ECDSA／ZIP 與舊客戶端保持不變。新信任檔仍為 schema 1，多出可選 receipt 欄位供提交一致性判斷，舊客戶端忽略該欄位。舊明文交易／遷移中斷的安全限制及人工處理方式見 [SECURITY.md](../SECURITY.md)。不要手改紀錄或刪除 update-trust.bin 來降版。
+
+本次未改 1.3.0 版號、未產生 Windows EXE／Tag／Release。相同版號不會被既有防降版規則當成更新；請先本地重建／驗證，日後正式發布時再由維護者決定下一個版本，不能略過 SemVer 驗證發布同版覆蓋更新。

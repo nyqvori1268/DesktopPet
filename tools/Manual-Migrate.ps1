@@ -88,7 +88,7 @@ if ((Test-Path $journal) -or (Test-Path $backup)) { throw 'Recover the existing 
 foreach ($name in $files) { Assert-PlainPath (Join-Path $Target $name) }
 $mutex = [Threading.Mutex]::new($false,'Local\DesktopPet.UpdateTransaction'); $owned = $false
 $staging = Join-Path ([IO.Path]::GetTempPath()) ('DesktopPet-verified-'+[Guid]::NewGuid().ToString('N'))
-$child = $null; $ready = $null; $changed = $false; $existed = @{}; $snapshot = $null; $journalCreated = $false
+$child = $null; $ready = $null; $changed = $false; $existed = @{}; $snapshot = $null; $journalCreated = $false; $commitAttempted = $false
 try {
  $owned = $mutex.WaitOne(0)
  if (!$owned) { throw 'Another updater is running.' }
@@ -142,11 +142,14 @@ try {
  $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $Target 'DesktopPet.exe')); $start.WorkingDirectory=$Target; $start.UseShellExecute=$false; $start.ArgumentList.Add('--updated'); $start.ArgumentList.Add($eventName)
  $child = [Diagnostics.Process]::Start($start)
  if (!$ready.WaitOne(20000) -or $child.WaitForExit(3000)) { throw 'New application failed its readiness/health check.' }
+ $transaction.phase='committing'; Atomic-Bytes $journal ([Text.UTF8Encoding]::new($false).GetBytes(($transaction | ConvertTo-Json -Depth 4 -Compress)))
+ $commitAttempted=$true
  Run-TrustCommand (Join-Path $Target 'DesktopPet.exe') @('--adopt-update-trust',[IO.Path]::GetFullPath($Manifest),[IO.Path]::GetFullPath($Signature))
  Remove-Item -LiteralPath $journal -Force; Remove-Item -LiteralPath $backup -Recurse -Force; $changed=$false
  Write-Host 'Manual migration completed; configuration and timer snapshot restored.'
 } catch {
  $failure = $_
+ if ($commitAttempted) { Write-Warning 'Trust commit may already be durable; preserving the new files, journal and backup. Follow SECURITY.md before any recovery.'; throw $failure }
  if ($null -ne $child -and !$child.HasExited) { $child.Kill(); $child.WaitForExit() } # Only the process created above, never a PID lookup.
  if ($changed) {
   foreach ($name in $files) { $to=Join-Path $Target $name; if ($existed[$name]) { Atomic-Bytes $to ([IO.File]::ReadAllBytes((Join-Path $backup $name))) } elseif (Test-Path $to) { Remove-Item -LiteralPath $to -Force } }

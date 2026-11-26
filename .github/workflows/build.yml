@@ -7,68 +7,137 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: windows-2022
+    timeout-minutes: 30
+    outputs:
+      signed-artifact-id: ${{ steps.signed-upload.outputs.artifact-id }}
     env:
       DESKTOPPET_PUBLIC_KEY: ${{ vars.DESKTOPPET_PUBLIC_KEY }}
       DESKTOPPET_BACKUP_PUBLIC_KEY: ${{ vars.DESKTOPPET_BACKUP_PUBLIC_KEY }}
       UPDATE_SIGNING_PUBLIC_KEY: ${{ vars.UPDATE_SIGNING_PUBLIC_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Reject sensitive tracked files
+        shell: pwsh
+        run: |
+          python tools/Check-Sensitive.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python tests/security_tool_tests.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Configure x64 / static runtime
         shell: pwsh
         run: |
-          $owner, $repo = '${{ github.repository }}'.Split('/')
+          $owner, $repo = $env:GITHUB_REPOSITORY.Split('/')
           cmake -S . -B build -A x64 "-DDESKTOPPET_OWNER=$owner" "-DDESKTOPPET_REPOSITORY=$repo" "-DDESKTOPPET_PUBLIC_KEY=$env:DESKTOPPET_PUBLIC_KEY" "-DDESKTOPPET_BACKUP_PUBLIC_KEY=$env:DESKTOPPET_BACKUP_PUBLIC_KEY"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Build Release
         run: cmake --build build --config Release --parallel
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
-      - name: Check executable runtime imports
+      - name: Verify actual PE mitigations and runtime imports
         shell: pwsh
-        run: |
-          $vs = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath
-          $dumpbin = Get-ChildItem "$vs/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe" | Select-Object -Last 1
-          foreach ($exe in 'DesktopPet','Updater') {
-            $imports = & $dumpbin.FullName /dependents "build/Release/$exe.exe"
-            if ($LASTEXITCODE -or ($imports -match '(?i)(VCRUNTIME|MSVCP|ucrtbased|VCRUNTIME.*d)\d*\.dll')) { throw 'Non-system runtime dependency or import check failed.' }
-          }
+        run: ./tools/Test-PE.ps1
       - name: Portable package (CI)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         shell: pwsh
         run: ./tools/Package.ps1
-      - uses: actions/upload-artifact@v4
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        with:
-          name: DesktopPet-portable
-          path: |
-            dist/DesktopPet_v*.zip
-            dist/DesktopPet-windows-x64.zip
-            dist/SHA256SUMS.txt
       - name: Signed release package
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
         shell: pwsh
         env:
           UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
         run: ./tools/Package.ps1 -Sign -Tag $env:GITHUB_REF_NAME
-      - uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Reject sensitive package contents
+        if: github.event_name == 'push' || !startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem dist/*.zip | ForEach-Object FullName)
+          if ($packages.Count -ne 2) { throw 'Exactly two ZIPs required.' }
+          python tools/Check-Sensitive.py @packages
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        with:
+          name: DesktopPet-portable
+          if-no-files-found: error
+          path: |
+            dist/DesktopPet_v*.zip
+            dist/DesktopPet-windows-x64.zip
+            dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        id: signed-upload
+        if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
         with:
           name: signed-release
-          path: dist/*
-  release:
+          if-no-files-found: error
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+            dist/update.json
+            dist/update.sig
+            dist/RELEASE_NOTES.md
+  provenance:
     if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
     needs: build
     runs-on: windows-2022
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          artifact-ids: ${{ needs.build.outputs.signed-artifact-id }}
+          path: dist
+      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-path: |
+            dist/*.zip
+            dist/update.json
+            dist/update.sig
+            dist/SHA256SUMS.txt
+            dist/RELEASE_NOTES.md
+  release:
+    if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
+    needs: [build, provenance]
+    runs-on: windows-2022
+    timeout-minutes: 10
     permissions:
       contents: write
+      actions: read
+      attestations: read
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: signed-release
+          artifact-ids: ${{ needs.build.outputs.signed-artifact-id }}
           path: dist
+      - name: Verify provenance before publication
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ref = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$env:GITHUB_REF_NAME" | ConvertFrom-Json
+          if ($LASTEXITCODE) { throw 'Cannot resolve release tag.' }
+          $object = $ref.object
+          for ($depth=0; $object.type -eq 'tag' -and $depth -lt 8; $depth++) {
+            $tag = gh api "repos/$env:GITHUB_REPOSITORY/git/tags/$($object.sha)" | ConvertFrom-Json
+            if ($LASTEXITCODE) { throw 'Cannot resolve annotated tag.' }
+            $object = $tag.object
+          }
+          if ($object.type -ne 'commit' -or $object.sha -cne $env:GITHUB_SHA) { throw 'Tag moved or source commit mismatch; refusing publication.' }
+          foreach ($file in Get-ChildItem dist -File) {
+            gh attestation verify $file.FullName --repo $env:GITHUB_REPOSITORY --signer-workflow "$env:GITHUB_REPOSITORY/.github/workflows/build.yml" --source-ref $env:GITHUB_REF --source-digest $env:GITHUB_SHA --deny-self-hosted-runners
+            if ($LASTEXITCODE) { throw 'Build provenance verification failed; refusing publication.' }
+          }
       - name: Publish stable release
         shell: pwsh
         env:
@@ -76,5 +145,5 @@ jobs:
         run: |
           $manual = @(Get-ChildItem dist/DesktopPet_v*.zip)
           if ($manual.Count -ne 1) { throw 'Exactly one versioned portable ZIP required.' }
-          gh release create $env:GITHUB_REF_NAME "$($manual[0].FullName)" dist/DesktopPet-windows-x64.zip dist/SHA256SUMS.txt dist/update.json dist/update.sig --repo '${{ github.repository }}' --title "DesktopPet $env:GITHUB_REF_NAME" --notes-file dist/RELEASE_NOTES.md --latest
+          gh release create $env:GITHUB_REF_NAME "$($manual[0].FullName)" dist/DesktopPet-windows-x64.zip dist/SHA256SUMS.txt dist/update.json dist/update.sig --repo $env:GITHUB_REPOSITORY --title "DesktopPet $env:GITHUB_REF_NAME" --notes-file dist/RELEASE_NOTES.md --verify-tag --latest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

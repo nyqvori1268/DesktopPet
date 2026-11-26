@@ -16,6 +16,7 @@ inline const wchar_t* tw(TextId id){
 inline std::wstring wf(TextId id,std::initializer_list<std::wstring> arguments){std::vector<std::string> strings;for(auto&argument:arguments)strings.push_back(utf8(argument));return wide(formatText(id,strings));}
 inline const wchar_t* uiFontName(){return uiLanguage()==Language::JaJP?L"Yu Gothic UI":uiLanguage()==Language::EnUS?L"Segoe UI":L"Microsoft JhengHei UI";}
 inline constexpr UINT LanguageChanged=WM_APP+20;
+bool secureDllLoading();
 Language windowsDisplayLanguage();
 void broadcastLanguageChange(Language previous);
 

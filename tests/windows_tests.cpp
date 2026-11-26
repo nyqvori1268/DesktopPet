@@ -6,6 +6,7 @@
 #include "handoff.h"
 #include "update_logic.h"
 #include "trust_store.h"
+#include "transaction.h"
 #include <bcrypt.h>
 #include <iostream>
 using namespace pet;
@@ -24,7 +25,28 @@ static void trustCryptoTests(){
  envelope["signature"]=sign(1);auto rotated=applyPolicy(roots,envelope,verify);require(rotated.accepts(points[2])&&!rotated.accepts(points[0]),"offline backup authorized rotation and revoked primary");envelope["signature"]=sign(2);rejected=false;try{applyPolicy(roots,envelope,verify);}catch(...){rejected=true;}require(rejected,"new untrusted key cannot authorize itself");
  std::cout<<"PASS native ECDSA trust-policy authorization, backup rotation and revocation\n";
 }
+static Json testTransaction(const fs::path&dir){Json j;j["schema"]=2;j["phase"]="backing";j["target"]=updateTarget(dir);j["oldVersion"]="1.3.0";j["version"]="1.4.0";j["manifest"]="test-only manifest";j["receipt"]=sha256(std::vector<unsigned char>{'t','e','s','t','-','o','n','l','y',' ','m','a','n','i','f','e','s','t'});j["signature"]=std::string(128,'0');for(auto name:transactionFiles){auto path=dir/wide(name);std::vector<unsigned char>data{'o','l','d'};writeUpdateFile(path,data);j["files"][name]["existed"]=true;j["files"][name]["before"]=sha256(data);j["files"][name]["after"]=std::string(64,'b');}return j;}
+static void transactionFilesystemTests(){
+ auto root=appData()/L"test"/wide(randomId());fs::create_directories(root/L"data");
+ try{
+  auto pi=launch(executable(),{L"--journal-abort",root.wstring()});require(WaitForSingleObject(pi.hProcess,10000)==WAIT_OBJECT_0,"interrupted journal helper exits");DWORD code=0;GetExitCodeProcess(pi.hProcess,&code);CloseHandle(pi.hProcess);CloseHandle(pi.hThread);require(code==23,"real ExitProcess interrupt bypasses destructors");auto j=loadTransaction(root);require(j["phase"].str()=="prepared","authenticated journal survives abrupt process termination");
+  for(auto name:transactionFiles)require(sha256(readUpdateFile(root/transactionBackup/wide(name)))==j["files"][name]["before"].str(),"all durable backup hashes match after process loss");
+  bool rejected=false;auto copied=root/L"other";fs::create_directory(copied);auto cipher=readUpdateFile(root/transactionJournal);atomicWrite(copied/transactionJournal,cipher.data(),cipher.size());try{loadTransaction(copied);}catch(...){rejected=true;}require(rejected,"journal bound to original target directory");
+  {UpdatePathLock guard(root/L"data");require(!MoveFileW((root/L"data").c_str(),(root/L"moved").c_str()),"locked parent cannot be swapped or renamed");}
+  require(CreateHardLinkW((root/L"link").c_str(),(root/L"README.md").c_str(),nullptr)!=FALSE,"NTFS hardlink fixture");rejected=false;try{readUpdateFile(root/L"README.md");}catch(...){rejected=true;}require(rejected,"hardlinked update files rejected");fs::remove(root/L"link");
+  cipher[10]^=1;writeUpdateFile(root/transactionJournal,cipher);rejected=false;try{loadTransaction(root);}catch(...){rejected=true;}require(rejected&&fs::exists(root/transactionBackup/L"DesktopPet.exe"),"tampered DPAPI journal rejected with backups preserved");fs::remove_all(root);
+ }catch(...){std::error_code ec;fs::remove_all(root,ec);throw;}
+ std::cout<<"PASS real process-abort journal durability, DPAPI tamper, target binding, parent locks and hardlink refusal\n";
+}
 int wmain(int argc,wchar_t**argv){try{
+ require(secureDllLoading(),"System32 DLL policy");
+ if(argc==3&&std::wstring(argv[1])==L"--dll-policy"){
+  auto dir=appData()/L"test"/wide(randomId());fs::create_directories(dir);auto name=L"DesktopPetProbe-"+wide(randomId())+L".dll";auto file=dir/name;fs::copy_file(argv[2],file);auto previous=fs::current_path();
+  try{HMODULE module=LoadLibraryExW(file.c_str(),nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32);require(module!=nullptr,"absolute benign fixture DLL is valid");auto probe=reinterpret_cast<int(*)()>(GetProcAddress(module,"DesktopPetProbe"));require(probe&&probe()==130,"benign fixture export callable");FreeLibrary(module);fs::current_path(dir);module=LoadLibraryW(name.c_str());if(module)FreeLibrary(module);require(!module,"current-directory DLL planting is blocked by actual loader policy");fs::current_path(previous);fs::remove_all(dir);}catch(...){fs::current_path(previous);std::error_code ec;fs::remove_all(dir,ec);throw;}std::cout<<"PASS valid absolute test DLL loads but current-directory planting is refused\n";return 0;
+ }
+
+ if(argc==3&&std::wstring(argv[1])==L"--journal-abort"){auto dir=fs::path(argv[2]);auto j=testTransaction(dir);prepareUpdate(dir,j);ExitProcess(23);}
+
  if(argc==3&&std::wstring(argv[1])==L"--ocean-resources"){
   HMODULE module=LoadLibraryExW(argv[2],nullptr,LOAD_LIBRARY_AS_DATAFILE|LOAD_LIBRARY_AS_IMAGE_RESOURCE);require(module!=nullptr,"built DesktopPet loads as data only");
   try{for(int i=0;i<6;++i){auto resource=FindResourceW(module,MAKEINTRESOURCEW(201+i),RT_RCDATA);require(resource!=nullptr,"all six marine resources linked into executable");auto loaded=LoadResource(module,resource);auto bytes=static_cast<const unsigned char*>(LockResource(loaded));auto size=SizeofResource(module,resource);require(bytes&&size,"resource bytes available");std::vector<unsigned char>data(bytes,bytes+size);auto clip=decodeOcean(data);require(clip.frames.size()==6,"embedded native ocean decoding");auto original=readBytes(fs::path(PET_TEST_FIXTURES).parent_path().parent_path()/L"assets"/L"ocean"/(L"ocean-"+std::to_wstring(i)+L".ocp"));require(sha256(data)==sha256(original),"resource exactly matches verified source asset");}}
@@ -47,6 +69,7 @@ int wmain(int argc,wchar_t**argv){try{
  }
  if(argc==5&&std::wstring(argv[1])==L"--signature"){require(verifySignature(readBytes(argv[3]),readBytes(argv[4]),utf8(argv[2])),"PowerShell/native ECDSA interoperability");std::cout<<"PASS PowerShell signature\n";return 0;}
  for(int lang=0;lang<3;++lang){setUILanguage(Language(lang));require(utf8(tw(TextId::Close))==tr(TextId::Close,Language(lang)),"native cached translations switch immediately");require(std::wstring(uiFontName()).size()>0,"locale font selected");}setUILanguage(Language::ZhTW);
+ transactionFilesystemTests();
  require(validateUpdateParent(GetCurrentProcess(),GetCurrentProcessId(),processCreation(GetCurrentProcess()),executable()),"live self identity proof");
  require(!validateUpdateParent(GetCurrentProcess(),GetCurrentProcessId(),processCreation(GetCurrentProcess())+1,executable()),"reused PID/creation mismatch rejected");
  require(!validateUpdateParent(GetCurrentProcess(),GetCurrentProcessId()+1,processCreation(GetCurrentProcess()),executable()),"unrelated PID rejected");

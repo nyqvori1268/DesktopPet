@@ -9,6 +9,7 @@
 #include "handoff.h"
 #include "update_window.h"
 #include "trust_store.h"
+#include "transaction.h"
 #include "zip.h"
 #include <commdlg.h>
 #include <windowsx.h>
@@ -253,12 +254,12 @@ struct App{
 };
 }
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int){
+ if(!secureDllLoading())return 1;
  SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);INITCOMMONCONTROLSEX controls{sizeof(controls),ICC_STANDARD_CLASSES|ICC_PROGRESS_CLASS};InitCommonControlsEx(&controls);CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
  int argc=0;auto argv=CommandLineToArgvW(GetCommandLineW(),&argc);if(argc==5&&wcscmp(argv[1],L"--verify-update")==0){int result=0;try{auto info=verifyManifest(readBytes(argv[2],65536),readBytes(argv[3],64));auto bytes=readBytes(argv[4],15*1024*1024);auto metadata=Json::parse(std::string(info.manifest.begin(),info.manifest.end()));if(bytes.size()!=info.size||sha256(bytes)!=metadata["sha256"].str())throw std::runtime_error(tr(TextId::S175));inspectZip(bytes);}catch(...){result=1;}LocalFree(argv);CoUninitialize();return result;}if(argc==4&&wcscmp(argv[1],L"--adopt-update-trust")==0){int result=0;try{commitInstalledTrust(readBytes(argv[2],65536),readBytes(argv[3],64),PET_VERSION);}catch(...){result=1;}LocalFree(argv);CoUninitialize();return result;}bool restore=argc>1&&wcscmp(argv[1],L"--updated")==0;std::wstring eventName=restore&&argc>2?argv[2]:L"";LocalFree(argv);
  try{
-  auto dir=executable().parent_path();if(!restore&&fs::exists(dir/L".desktoppet-transaction.json")){auto temp=appData()/L"updaters"/wide(randomId());fs::create_directories(temp);auto b=readBytes(dir/L"Updater.exe");atomicWrite(temp/L"Updater.exe",b.data(),b.size());auto pi=launch(temp/L"Updater.exe",{L"--recover",dir.wstring()});CloseHandle(pi.hProcess);CloseHandle(pi.hThread);return 0;}
-  // Remove only stale, non-reparse update working directories; preserve active/recoverable transactions.
-  if(!fs::exists(dir/L".desktoppet-transaction.json"))for(auto root:{appData()/L"updates",appData()/L"updaters"}){std::error_code ec;if(fs::exists(root,ec))for(auto&i:fs::directory_iterator(root,ec)){if(i.is_symlink(ec))continue;if(fs::file_time_type::clock::now()-i.last_write_time(ec)>std::chrono::hours(24*7)){try{rejectReparse(i.path());fs::remove_all(i.path(),ec);}catch(...){}}}}
+  auto dir=executable().parent_path();if(!restore&&fs::exists(dir/L".desktoppet-transaction.json")){loadTransaction(dir);auto temp=appData()/L"updaters"/wide(randomId());fs::create_directories(temp);auto b=readUpdateFile(dir/L"Updater.exe");atomicWrite(temp/L"Updater.exe",b.data(),b.size());auto pi=launch(temp/L"Updater.exe",{L"--recover",dir.wstring()});CloseHandle(pi.hProcess);CloseHandle(pi.hThread);return 0;}
+  if(!fs::exists(dir/transactionJournal))cleanupUpdateWork();
   App app(instance);if(!app.init(restore))return 0;if(!eventName.empty()){HANDLE event=OpenEventW(EVENT_MODIFY_STATE,FALSE,eventName.c_str());if(event){SetEvent(event);CloseHandle(event);}}
   MSG msg{};while(GetMessageW(&msg,nullptr,0,0)>0){if(!app.updateWindow.dialog(msg)&&!app.aboutWindow.dialog(msg)){TranslateMessage(&msg);DispatchMessageW(&msg);}}CoUninitialize();return 0;
  }catch(const std::exception&e){auto message=std::string(e.what());localizedMessage(nullptr,instance,TextId::S176,[message]{return wide(currentSystemText(message));},false);CoUninitialize();return 1;}

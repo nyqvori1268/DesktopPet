@@ -13,3 +13,11 @@ signing-key*
 # Imported artwork is local user data, never a release asset.
 /custom-pets/
 /local-only/
+
+# Local update journals, trust and backups are never source/release inputs.
+.desktoppet-*
+update-trust.*
+*.p12
+*.der
+.env
+.env.*

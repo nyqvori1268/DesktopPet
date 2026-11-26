@@ -9,6 +9,7 @@ if ($Version -cne $sourceVersion) { throw 'Source version mismatch.' }
 if ($Tag -and $Tag -cne "v$Version") { throw 'Tag must equal v + project version.' }
 if (!(Test-Path "$Build/Release/DesktopPet.exe") -or !(Test-Path "$Build/Release/Updater.exe")) { throw 'Build Release first.' }
 foreach ($exe in 'DesktopPet','Updater') { if ([Diagnostics.FileVersionInfo]::GetVersionInfo([IO.Path]::GetFullPath("$Build/Release/$exe.exe")).ProductVersion -cne $Version) { throw 'Executable version does not match project version; rebuild Release.' } }
+& "$PSScriptRoot/Test-PE.ps1" -Path @("$Build/Release/DesktopPet.exe","$Build/Release/Updater.exe")
 $stage = Join-Path $Output 'stage'
 if (Test-Path $Output) { Remove-Item $Output -Recurse -Force }
 New-Item -ItemType Directory -Force "$stage/data" | Out-Null
@@ -16,7 +17,7 @@ Copy-Item "$Build/Release/DesktopPet.exe", "$Build/Release/Updater.exe" $stage
 Copy-Item data/dialogue.json "$stage/data/"
 Copy-Item README.md, CHANGELOG.md, LICENSE, THIRD_PARTY_NOTICES.md $stage
 # Preserve the five-file updater whitelist while carrying all required notices.
-$readme = (Get-Content README.md -Raw) + "`n`n## MIT License`n`n" + (Get-Content LICENSE -Raw) + "`n`n" + (Get-Content THIRD_PARTY_NOTICES.md -Raw)
+$readme = (Get-Content README.md -Raw) + "`n`n## MIT License`n`n" + (Get-Content LICENSE -Raw) + "`n`n" + (Get-Content THIRD_PARTY_NOTICES.md -Raw) + "`n`n" + (Get-Content SECURITY.md -Raw)
 [IO.File]::WriteAllText((Join-Path $stage 'README.md'),$readme,[Text.UTF8Encoding]::new($false))
 # Files are explicitly allowlisted; no directory records, deflate, timestamp extras, config or private keys.
 Add-Type -AssemblyName System.IO.Compression

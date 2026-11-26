@@ -5,6 +5,7 @@
 #include <fstream>
 #include <memory>
 namespace pet {
+bool secureDllLoading(){return SetDllDirectoryW(L"")&&SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);}
 Language windowsDisplayLanguage(){wchar_t locale[LOCALE_NAME_MAX_LENGTH]{};if(!LCIDToLocaleName(MAKELCID(GetUserDefaultUILanguage(),SORT_DEFAULT),locale,LOCALE_NAME_MAX_LENGTH,0))return Language::EnUS;return detectDisplayLanguage(utf8(locale));}
 void broadcastLanguageChange(Language previous){EnumThreadWindows(GetCurrentThreadId(),[](HWND window,LPARAM old)->BOOL{SendMessageW(window,LanguageChanged,WPARAM(old),0);return TRUE;},LPARAM(previous));}
 std::wstring wide(const std::string&s){if(s.empty())return {};int n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,s.data(),int(s.size()),nullptr,0);if(!n)throw std::runtime_error(tr(TextId::S177));std::wstring w(n,0);MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,s.data(),int(s.size()),w.data(),n);return w;}

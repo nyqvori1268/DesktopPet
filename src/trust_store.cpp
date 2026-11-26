@@ -1,5 +1,6 @@
 #include "trust_store.h"
 #include "build_config.h"
+#include "transaction.h"
 #include <wincrypt.h>
 namespace pet {
 namespace {
@@ -18,16 +19,21 @@ std::vector<unsigned char> protect(const std::vector<unsigned char>&bytes,bool e
  std::vector<unsigned char> result;try{result.assign(output.pbData,output.pbData+output.cbData);}catch(...){LocalFree(output.pbData);throw;}LocalFree(output.pbData);return result;
 }
 struct Snapshot{Json chain=Json::Array{};TrustState state;};
-Snapshot load(){Snapshot s;s.state=roots();auto path=statePath();rejectReparse(path);if(!fs::exists(path))return s;auto bytes=protect(readBytes(path,1024*1024),false);auto j=Json::parse(std::string(bytes.begin(),bytes.end()));if(j["schema"].num()!=1)throw std::runtime_error(tr(TextId::S212));s.chain=j["chain"];s.state=evaluatePolicies(roots(),s.chain,verifier());auto high=Version::parse(j["highest"].str()),current=Version::parse(PET_VERSION);if(!high||!current)throw std::runtime_error(tr(TextId::S213));s.state.highest=*high<*current?PET_VERSION:j["highest"].str();return s;}
+Snapshot load(){Snapshot s;s.state=roots();auto path=statePath();rejectReparse(path);if(!fs::exists(path))return s;auto bytes=protect(readUpdateFile(path,1024*1024),false);auto j=Json::parse(std::string(bytes.begin(),bytes.end()));if(j["schema"].num()!=1)throw std::runtime_error(tr(TextId::S212));s.chain=j["chain"];s.state=evaluatePolicies(roots(),s.chain,verifier());auto high=Version::parse(j["highest"].str()),current=Version::parse(PET_VERSION);if(!high||!current)throw std::runtime_error(tr(TextId::S213));s.state.highest=*high<*current?PET_VERSION:j["highest"].str();return s;}
 Snapshot candidate(const Snapshot&old,const Json&manifest){Snapshot next=old;if(manifest["trust"].array()){if(!chainExtends(old.chain,manifest["trust"]))throw std::runtime_error(tr(TextId::S214));next.chain=manifest["trust"];next.state=evaluatePolicies(roots(),next.chain,verifier());next.state.highest=old.state.highest;}else if(!std::holds_alternative<std::nullptr_t>(manifest["trust"].v))throw std::runtime_error(tr(TextId::S215));validPoints(next.state);if(!next.state.permits(manifest["version"].str()))throw std::runtime_error(tr(TextId::S216));return next;}
 bool signature(const Snapshot&s,const std::vector<unsigned char>&m,const std::vector<unsigned char>&sig){return (s.state.accepts(s.state.primary)&&verifySignature(m,sig,s.state.primary))||(s.state.accepts(s.state.backup)&&verifySignature(m,sig,s.state.backup));}
 }
-bool verifyTrustedManifest(const std::vector<unsigned char>&message,const std::vector<unsigned char>&sig){if(message.size()>65536||sig.size()!=64)return false;Guard guard;auto manifest=Json::parse(std::string(message.begin(),message.end()));auto next=candidate(load(),manifest);return signature(next,message,sig);}
-void checkTrustVersion(const Json&manifest){Guard guard;candidate(load(),manifest);}
+bool verifyTrustedManifest(const std::vector<unsigned char>&message,const std::vector<unsigned char>&sig){if(message.size()>65536||sig.size()!=64)return false;Guard guard;UpdatePathLock directory(appData());auto manifest=Json::parse(std::string(message.begin(),message.end()));auto next=candidate(load(),manifest);return signature(next,message,sig);}
+void checkTrustVersion(const Json&manifest){Guard guard;UpdatePathLock directory(appData());candidate(load(),manifest);}
 void commitInstalledTrust(const std::vector<unsigned char>&message,const std::vector<unsigned char>&sig,const std::string&installedVersion){
- if(message.size()>65536||sig.size()!=64)throw std::runtime_error(tr(TextId::S217));Guard guard;auto j=Json::parse(std::string(message.begin(),message.end()));auto next=candidate(load(),j);
+ if(message.size()>65536||sig.size()!=64)throw std::runtime_error(tr(TextId::S217));Guard guard;UpdatePathLock directory(appData());auto j=Json::parse(std::string(message.begin(),message.end()));auto next=candidate(load(),j);
  auto minimum=Version::parse(j["minVersion"].str()),version=Version::parse(installedVersion);if(!minimum||!version||*version<*minimum||j["schema"].num()!=1||j["arch"].str()!="windows-x64"||j["asset"].str()!="DesktopPet-windows-x64.zip"||j["version"].str()!=installedVersion||!signature(next,message,sig))throw std::runtime_error(tr(TextId::S218));
- Json state;state["schema"]=1;state["chain"]=next.chain;state["highest"]=installedVersion;auto text=state.dump();auto encrypted=protect(std::vector<unsigned char>(text.begin(),text.end()),true);atomicWrite(statePath(),encrypted.data(),encrypted.size());
+ Json state;state["schema"]=1;state["chain"]=next.chain;state["highest"]=installedVersion;state["receipt"]=sha256(message);auto text=state.dump();auto encrypted=protect(std::vector<unsigned char>(text.begin(),text.end()),true);writeUpdateFile(statePath(),encrypted);
+}
+TrustCommit installedTrustCommit(const std::string&oldVersion,const std::string&version,const std::string&receipt){
+ Guard guard;UpdatePathLock directory(appData());auto path=statePath();rejectReparse(path);if(!fs::exists(path))return TrustCommit::Before;
+ auto bytes=protect(readUpdateFile(path,1024*1024),false);auto stored=Json::parse(std::string(bytes.begin(),bytes.end()));load();
+ return classifyTrustCommit(stored["highest"].str(),stored["receipt"].str(),oldVersion,version,receipt);
 }
 bool authorizedSigningKey(const Json&chain,const std::string&point,bool emergency){auto s=evaluatePolicies(roots(),chain,verifier());validPoints(s);auto key=publicPoint(point);return emergency?key==s.backup&&!key.empty():key==s.primary;}
 }
