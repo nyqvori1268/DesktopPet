@@ -7,7 +7,7 @@
 namespace pet {
 UpdatePathLock::UpdatePathLock(const fs::path&directory){
  try{auto full=fs::absolute(directory).lexically_normal();if(full.root_name().wstring().size()!=2)transactionError();std::vector<fs::path>paths;for(auto p=full;!p.empty();p=p.parent_path()){paths.push_back(p);if(p==p.root_path())break;}std::reverse(paths.begin(),paths.end());
-  for(auto&p:paths){HANDLE h=CreateFileW(p.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr);if(h==INVALID_HANDLE_VALUE)transactionError();handles.push_back(h);BY_HANDLE_FILE_INFORMATION info{};if(!GetFileInformationByHandle(h,&info)||!(info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)||(info.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT))transactionError();}
+  for(auto&p:paths){HANDLE h=CreateFileW(p.c_str(),FILE_LIST_DIRECTORY|FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr);if(h==INVALID_HANDLE_VALUE)transactionError();handles.push_back(h);BY_HANDLE_FILE_INFORMATION info{};if(!GetFileInformationByHandle(h,&info)||!(info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)||(info.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT))transactionError();}
  }catch(...){for(auto h:handles)CloseHandle(h);throw;}
 }
 UpdatePathLock::~UpdatePathLock(){for(auto h:handles)CloseHandle(h);}
