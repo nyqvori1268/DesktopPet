@@ -104,12 +104,14 @@ struct Form{
  }
  void show(HWND owner,HINSTANCE instance){
   static bool registered=false;if(!registered){WNDCLASSW wc{};wc.hInstance=instance;wc.lpfnWndProc=proc;wc.lpszClassName=L"PetForm";wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);wc.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&wc);registered=true;}
+  // Use a real scrollable child window, not a STATIC control with transparent hit testing.
+  if(multiEditor){WNDCLASSW wc{};wc.hInstance=instance;wc.lpfnWndProc=DefWindowProcW;wc.lpszClassName=L"DesktopPetFormContent";wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);if(!RegisterClassW(&wc)&&GetLastError()!=ERROR_CLASS_ALREADY_EXISTS)throw std::runtime_error(tr(TextId::S247));}
   dpi=int(owner?GetDpiForWindow(owner):GetDpiForSystem());if(dpi<=0)dpi=96;POINT cursor{};GetCursorPos(&cursor);MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromPoint(cursor,MONITOR_DEFAULTTONEAREST),&mi);
   hwnd=CreateWindowExW(WS_EX_DLGMODALFRAME,L"PetForm",L"",(resizable?WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN:WS_CAPTION|WS_SYSMENU),mi.rcWork.left+px(24),mi.rcWork.top+px(24),px(560),px(400),owner,nullptr,instance,this);
   if(!hwnd)throw std::runtime_error(tr(TextId::S247));
   brandWindow(hwnd);
   if(resizable){RECT size{0,0,px(logicalWidth),px(logicalHeight)};AdjustWindowRectExForDpi(&size,WS_OVERLAPPEDWINDOW|WS_CLIPCHILDREN,FALSE,WS_EX_DLGMODALFRAME,dpi);SetWindowPos(hwnd,nullptr,0,0,std::min(int(size.right-size.left),int(mi.rcWork.right-mi.rcWork.left)),std::min(int(size.bottom-size.top),int(mi.rcWork.bottom-mi.rcWork.top)),SWP_NOMOVE|SWP_NOZORDER);}
-  if(multiEditor){contentWindow=CreateWindowExW(WS_EX_CONTROLPARENT,L"STATIC",L"",WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN|WS_VSCROLL,0,0,1,1,hwnd,nullptr,instance,nullptr);SetWindowSubclass(contentWindow,contentProc,1,DWORD_PTR(this));if(helpId!=TextId::Count)helpWindow=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE,0,0,1,1,hwnd,nullptr,instance,nullptr);}
+  if(multiEditor){contentWindow=CreateWindowExW(WS_EX_CONTROLPARENT,L"DesktopPetFormContent",L"",WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN|WS_VSCROLL,0,0,1,1,hwnd,nullptr,instance,nullptr);if(!contentWindow||!SetWindowSubclass(contentWindow,contentProc,1,DWORD_PTR(this))){DestroyWindow(hwnd);throw std::runtime_error(tr(TextId::S247));}if(helpId!=TextId::Count)helpWindow=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE,0,0,1,1,hwnd,nullptr,instance,nullptr);}
   HWND fieldParent=multiEditor?contentWindow:hwnd;int id=100;for(auto&field:fields){field.labelWindow=CreateWindowW(L"STATIC",L"",WS_CHILD|WS_VISIBLE,0,0,1,1,fieldParent,nullptr,instance,nullptr);DWORD style=WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_CLIPSIBLINGS;const wchar_t*cls=L"EDIT";
    if(field.check){cls=L"BUTTON";style|=BS_AUTOCHECKBOX;}else if(field.combo()){cls=L"COMBOBOX";style|=CBS_DROPDOWNLIST|WS_VSCROLL;}else style|=WS_BORDER|(field.multiline?ES_MULTILINE|ES_AUTOVSCROLL|ES_WANTRETURN|WS_VSCROLL:ES_AUTOHSCROLL);
    field.input=CreateWindowExW(0,cls,field.check?L"":field.value.c_str(),style,0,0,1,1,fieldParent,reinterpret_cast<HMENU>(INT_PTR(id++)),instance,nullptr);
