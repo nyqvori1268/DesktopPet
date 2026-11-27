@@ -16,6 +16,9 @@ inline const wchar_t* tw(TextId id){
 inline std::wstring wf(TextId id,std::initializer_list<std::wstring> arguments){std::vector<std::string> strings;for(auto&argument:arguments)strings.push_back(utf8(argument));return wide(formatText(id,strings));}
 inline const wchar_t* uiFontName(){return uiLanguage()==Language::JaJP?L"Yu Gothic UI":uiLanguage()==Language::EnUS?L"Segoe UI":L"Microsoft JhengHei UI";}
 inline constexpr UINT LanguageChanged=WM_APP+20;
+// LR_SHARED resource icons live for the process; never destroy these handles.
+inline HICON brandIcon(int size){return reinterpret_cast<HICON>(LoadImageW(GetModuleHandleW(nullptr),MAKEINTRESOURCEW(1),IMAGE_ICON,size,size,LR_SHARED));}
+inline void brandWindow(HWND window){int dpi=int(GetDpiForWindow(window));SendMessageW(window,WM_SETICON,ICON_SMALL,LPARAM(brandIcon(GetSystemMetricsForDpi(SM_CXSMICON,dpi))));SendMessageW(window,WM_SETICON,ICON_BIG,LPARAM(brandIcon(GetSystemMetricsForDpi(SM_CXICON,dpi))));}
 bool secureDllLoading();
 Language windowsDisplayLanguage();
 void broadcastLanguageChange(Language previous);

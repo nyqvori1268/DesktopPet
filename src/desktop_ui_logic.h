@@ -23,5 +23,10 @@ inline std::optional<UiRect> accessoryPlacement(UiRect pet,UiRect work,int width
  for(auto r:candidates)if(contains(work,r)&&!overlaps(r,pet)&&(!avoid||!overlaps(r,*avoid)))return r;
  return {};
 }
+inline bool fullscreenOnPetMonitor(UiRect foreground,UiRect foregroundMonitor,UiRect petMonitor,bool maximized,bool decorated,bool visible){
+ if(!visible||maximized||decorated||foregroundMonitor.x!=petMonitor.x||foregroundMonitor.y!=petMonitor.y||foregroundMonitor.w!=petMonitor.w||foregroundMonitor.h!=petMonitor.h)return false;
+ return foreground.x<=petMonitor.x+2&&foreground.y<=petMonitor.y+2&&foreground.x+foreground.w>=petMonitor.x+petMonitor.w-2&&foreground.y+foreground.h>=petMonitor.y+petMonitor.h-2;
+}
+inline int percentageInput(const std::wstring&text,int low,int high){if(text.empty()||text.size()>3||std::any_of(text.begin(),text.end(),[](wchar_t c){return c<L'0'||c>L'9';}))throw std::runtime_error(tr(TextId::S021));int value=std::stoi(text);if(value<low||value>high)throw std::runtime_error(tr(TextId::S021));return value;}
 inline int scalePercentage(const std::wstring&text){if(text.empty()||text.size()>3||std::any_of(text.begin(),text.end(),[](wchar_t c){return c<L'0'||c>L'9';}))throw std::runtime_error(tr(TextId::S021));int value=std::stoi(text);if(value<50||value>300)throw std::runtime_error(tr(TextId::S021));return value;}
 }

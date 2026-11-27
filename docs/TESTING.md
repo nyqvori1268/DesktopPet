@@ -50,3 +50,8 @@
 | CPU／記憶體／容量 | 乾淨系統量測待機、睡眠、拖曳、隱藏至少五分鐘；記錄 CPU 與 Working Set | 待測 |
 
 效能目標尚未實測，不能宣稱達標。打包腳本會拒絕超過 15 MiB 的 ZIP，但目前並無已成功建置的 Windows 發布容量數據。
+
+
+## v1.5.2
+
+新增 `v152_modes_editors`（模擬時鐘並行／佇列、三語草稿、動作隔離及透明度／螢幕邊界）、`v152_native_ui`（Windows 控制／預覽／捲動及兩 EXE Icon）與可用 Python 開發環境下的 `v152_brand_sources`。保留全部原 CTest／安全檢查；執行情況及 Windows 實機清單見 [V152_TESTING.md](V152_TESTING.md)。

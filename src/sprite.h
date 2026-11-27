@@ -10,12 +10,6 @@ struct Sprite{
  void dot(int x,int y,uint32_t c){if(x>=0&&x<48&&y>=0&&y<48)pixels[y*48+x]=c;}
  void box(int x,int y,int w,int h,uint32_t c){for(int j=y;j<y+h;++j)for(int i=x;i<x+w;++i)dot(i,j,c);}
  void oval(int x,int y,int w,int h,uint32_t c){for(int j=0;j<h;++j)for(int i=0;i<w;++i){double a=(i+.5-w/2.)/(w/2.),b=(j+.5-h/2.)/(h/2.);if(a*a+b*b<=1)dot(x+i,y+j,c);}}
- void heart(int x,int y){box(x,y,2,2,0xffef88a4);box(x+3,y,2,2,0xffef88a4);box(x,y+2,5,2,0xffef88a4);box(x+1,y+4,3,1,0xffef88a4);dot(x+2,y+5,0xffef88a4);}
- void extraEmote(Action action,double t){
-  if(action==Action::Pet||action==Action::Happy||action==Action::Shy){heart(3,3-int(std::sin(t*3)*2));heart(39,4);}
-  if(action==Action::Sleep){box(36,4,6,1,0xffffefd9);box(40,5,1,1,0xffffefd9);box(38,6,2,1,0xffffefd9);box(36,7,1,1,0xffffefd9);box(36,8,6,1,0xffffefd9);}
-  if(action==Action::Surprise||action==Action::Wake){box(42,10,2,5,0xffeaa3b3);box(42,17,2,2,0xffeaa3b3);}
- }
  void bird(int coat,Action action,double t){
   pixels.fill(0);coat=std::clamp(coat,0,4);bool crest=coat>=3,sleep=action==Action::Sleep;
   const uint32_t outline=0xff534954,ink=0xff423d4b,beak=0xffe7bb74;
@@ -43,7 +37,7 @@ struct Sprite{
   if(crest){oval(hx+2,hy+14,6,4,0xffe7a079);oval(hx+18,hy+14,6,4,0xffe7a079);}
   else {box(hx+3,hy+15,3,2,0xff8c9bc5);box(hx+20,hy+15,3,2,0xff8c9bc5);}
   box(16,41,2,4,beak);box(29,41,2,4,beak);box(14,44,7,1,outline);box(27,44,7,1,outline);
-  extraEmote(action,t);
+
  }
  void panda(Action action,double t){
   pixels.fill(0);const uint32_t outline=0xff534954,black=0xff625e68,white=0xfff4eee3,ink=0xff423d4b;
@@ -63,7 +57,7 @@ struct Sprite{
   if(action==Action::Yawn)oval(22,hy+19,5,5,ink);
   if(action==Action::Happy||action==Action::Pet){box(34,24,3,20,0xff98b77d);box(34,28,3,1,outline);box(34,36,3,1,outline);oval(37,25,8,4,0xffa9c58a);oval(28,31,8,4,0xffa9c58a);oval(30,35,8,6,black);}
   if(action==Action::Shy){box(12,hy+18,5,2,0xffeaa3b3);box(32,hy+18,5,2,0xffeaa3b3);}
-  extraEmote(action,t);
+
  }
  void make(int species,int coat,Action action,double t){
   if(species==3){bird(coat,action,t);return;}if(species==4){panda(action,t);return;}
@@ -95,9 +89,6 @@ struct Sprite{
   if(action==Action::Yawn)oval(22,hy+15,6,6,ink);else{dot(23,hy+16,ink);dot(25,hy+16,ink);}
   if(action==Action::Shy||action==Action::Happy||action==Action::Pet){box(13,hy+14,4,2,pink);box(33,hy+14,4,2,pink);}
   if(!species){box(7,hy+14,5,1,outline);box(37,hy+14,5,1,outline);}
-  if(action==Action::Pet||action==Action::Happy){heart(4,4-int(std::sin(t*3)*2));heart(38,5);}
-  if(sleep){box(37,6,6,1,cream);box(41,7,1,1,cream);box(39,8,2,1,cream);box(37,9,1,1,cream);box(37,10,6,1,cream);}
-  if(action==Action::Wake||action==Action::Surprise){box(42,8,2,5,pink);box(42,15,2,2,pink);}
  }
 };
 struct Spring{

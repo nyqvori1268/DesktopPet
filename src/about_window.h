@@ -13,6 +13,7 @@ class AboutWindow{
   if(!window)return;RECT r{};GetClientRect(window,&r);int w=r.right,h=r.bottom,margin=px(20),gap=px(10);
   if(font)DeleteObject(font);if(titleFont)DeleteObject(titleFont);font=CreateFontW(-px(14),0,0,0,FW_NORMAL,0,0,0,DEFAULT_CHARSET,0,0,0,0,uiFontName());titleFont=CreateFontW(-px(24),0,0,0,FW_BOLD,0,0,0,DEFAULT_CHARSET,0,0,0,0,uiFontName());
   auto position=[&](HWND child,int x,int y,int width,int height){SetWindowPos(child,nullptr,x,y,std::max(1,width),std::max(1,height),SWP_NOZORDER);SendMessageW(child,WM_SETFONT,WPARAM(font),TRUE);};
+  SendMessageW(icon,STM_SETICON,WPARAM(brandIcon(px(48))),0);brandWindow(window);
   position(icon,margin,px(20),px(48),px(48));position(heading,px(84),px(16),w-px(104),px(34));SendMessageW(heading,WM_SETFONT,WPARAM(titleFont),TRUE);position(version,px(84),px(54),w-px(104),px(24));
   position(details,margin,px(94),w-2*margin,h-px(210));int button=(w-2*margin-2*gap)/3;
   position(project,margin,h-px(104),button,px(32));position(issues,margin+button+gap,h-px(104),button,px(32));position(history,margin+2*(button+gap),h-px(104),button,px(32));
@@ -42,11 +43,11 @@ public:
  void bind(std::function<void()>callback){checkUpdate=std::move(callback);}
  bool dialog(MSG&message){return window&&IsWindowVisible(window)&&(message.hwnd==window||IsChild(window,message.hwnd))&&IsDialogMessageW(window,&message);}
  void show(HWND owner,HINSTANCE instance){
-  if(!window){WNDCLASSW wc{};wc.hInstance=instance;wc.lpfnWndProc=proc;wc.lpszClassName=L"DesktopPetAbout";wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);wc.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(1));wc.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&wc);dpi=int(GetDpiForWindow(owner));
+  if(!window){WNDCLASSW wc{};wc.hInstance=instance;wc.lpfnWndProc=proc;wc.lpszClassName=L"DesktopPetAbout";wc.hCursor=LoadCursorW(nullptr,IDC_ARROW);wc.hIcon=brandIcon(48);wc.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);RegisterClassW(&wc);dpi=int(GetDpiForWindow(owner));
    RECT size{0,0,px(600),px(560)};DWORD style=WS_OVERLAPPEDWINDOW;AdjustWindowRectExForDpi(&size,style,FALSE,WS_EX_TOOLWINDOW,dpi);POINT cursor{};GetCursorPos(&cursor);MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromPoint(cursor,MONITOR_DEFAULTTONEAREST),&mi);
    CreateWindowExW(WS_EX_TOOLWINDOW,L"DesktopPetAbout",L"",style,(mi.rcWork.left+mi.rcWork.right-size.right+size.left)/2,(mi.rcWork.top+mi.rcWork.bottom-size.bottom+size.top)/2,size.right-size.left,size.bottom-size.top,owner,nullptr,instance,this);
-   if(!window)throw std::runtime_error(tr(TextId::S247));theme.sync(window);auto child=[&](const wchar_t*type,DWORD flags,int id=0){return CreateWindowExW(0,type,L"",WS_CHILD|WS_VISIBLE|flags,0,0,1,1,window,reinterpret_cast<HMENU>(INT_PTR(id)),instance,nullptr);};
-   icon=child(L"STATIC",SS_ICON);SendMessageW(icon,STM_SETICON,WPARAM(LoadIconW(instance,MAKEINTRESOURCEW(1))),0);heading=child(L"STATIC",0);version=child(L"STATIC",0);details=child(L"EDIT",WS_BORDER|WS_TABSTOP|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL);SendMessageW(details,EM_SETLIMITTEXT,32768,0);
+   if(!window)throw std::runtime_error(tr(TextId::S247));brandWindow(window);theme.sync(window);auto child=[&](const wchar_t*type,DWORD flags,int id=0){return CreateWindowExW(0,type,L"",WS_CHILD|WS_VISIBLE|flags,0,0,1,1,window,reinterpret_cast<HMENU>(INT_PTR(id)),instance,nullptr);};
+   icon=child(L"STATIC",SS_ICON);SendMessageW(icon,STM_SETICON,WPARAM(brandIcon(48)),0);heading=child(L"STATIC",0);version=child(L"STATIC",0);details=child(L"EDIT",WS_BORDER|WS_TABSTOP|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL);SendMessageW(details,EM_SETLIMITTEXT,32768,0);
    SetWindowTheme(details,L"",L"");project=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,1);issues=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,3);history=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,4);update=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,5);close=child(L"BUTTON",WS_TABSTOP|BS_OWNERDRAW,2);
   }
   localize();ShowWindow(window,SW_SHOW);SetForegroundWindow(window);

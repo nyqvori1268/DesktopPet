@@ -33,4 +33,4 @@ for path,expected,delay in cases:
  assert changes[-1]<=max(changes[:-1])*1.6+100,('loop seam is an outlier',path,changes)
  if path.name in ('yawn.gif','belly.gif'):
   a=[p[3]>0 for p in expected[0].get_flattened_data()];b=[p[3]>0 for p in expected[-1].get_flattened_data()];assert sum(x and y for x,y in zip(a,b))/sum(x or y for x,y in zip(a,b))>.85,('cat pose jumps at loop boundary',path)
-print(f'PASS: {len(baseline["normalSHA256"])} untouched artwork hashes; all 70 new/corrected GIFs match OCP pixels at all 840 frame positions; transparent margins, loop seams, original poses; largest GIF {maxgif} bytes')
+print(f'PASS: {len(baseline["normalSHA256"])} expected asset hashes (brand ICO intentionally updated); all 70 new/corrected GIFs match OCP pixels at all 840 frame positions; transparent margins, loop seams, original poses; largest GIF {maxgif} bytes')

@@ -134,3 +134,8 @@ Windows 建置及測試後，既有 Package.ps1 會自動產生 `DesktopPet_v1.4
 新增名牌及 UI 程式碼均編入 EXE，仍只打包原五檔；Trackbar 使用現有 Common Controls，名牌使用原已連結的 GDI+，不增加 Runtime 或 DLL 白名單。所有素材、金鑰、ECDSA／SHA-256／DPJ3／DPAPI、交易／信任／回滾、DLL／MSVC 防護、Package.ps1 與最新 build.yml（含 EXE 雜湊／provenance）不變。未建立 Tag、Commit 或 Release。
 
 發布前完成 [V151_TESTING.md](V151_TESTING.md) 中的 Windows Release／原生 UI／高 DPI／輸入法／更新驗證，尤其檢查原生窗口捲動像素與 GDI 物件測試。新增 v151_native_ui 需要可繪製桌面的 Windows 工作階段，CMake 已給 60 秒 timeout；若 CI 無桌面不能把未完成 GUI 驗證標示通過。
+
+
+## v1.5.2 並行計時與品牌
+
+版本由 CMake 單一來源產生為 1.5.2；發布前完成 [V152_TESTING.md](V152_TESTING.md) 的 Windows Release／完整 CTest、原生 UI、多螢幕／焦點、三模式佇列／跨更新及效能實測。新品牌使用原 `assets/icons/pet.ico` 路徑與資源 ID 1，兩個 EXE 都需重新編譯；九尺寸內嵌且不另包大 PNG。全部寵物素材、五檔自動更新白名單、正式簽署與雙 ZIP／SHA256SUMS／provenance 流程不變。增量包不是自動更新包；本次沒有建立 Tag 或 Release。

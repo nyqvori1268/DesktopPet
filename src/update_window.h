@@ -35,7 +35,7 @@ class PetUpdateWindow{
   if(message==LanguageChanged){self->localize();return 0;}
   if(message==WM_SIZE){self->layout();return 0;}
   if(message==WM_GETMINMAXINFO){auto limit=reinterpret_cast<MINMAXINFO*>(lp);limit->ptMinTrackSize={self->px(560),self->px(420)};return 0;}
-  if(message==WM_DPICHANGED){self->dpi=HIWORD(wp);auto r=reinterpret_cast<RECT*>(lp);SetWindowPos(w,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER);self->layout();return 0;}
+  if(message==WM_DPICHANGED){self->dpi=HIWORD(wp);auto r=reinterpret_cast<RECT*>(lp);SetWindowPos(w,nullptr,r->left,r->top,r->right-r->left,r->bottom-r->top,SWP_NOZORDER);brandWindow(w);self->layout();return 0;}
   if(message==WM_COMMAND){switch(LOWORD(wp)){case 1:if(self->working){if(self->cancel)self->cancel();}else if(self->install)self->install();return 0;case 2:if(self->working)return 0;if(self->later)self->later();ShowWindow(w,SW_HIDE);return 0;}}
   if(message==WM_CLOSE){if(self->working&&self->cancel)self->cancel();else if(self->later)self->later();ShowWindow(w,SW_HIDE);return 0;}
   if(message==WM_DESTROY){if(self->font)DeleteObject(self->font);self->font=nullptr;self->window=nullptr;return 0;}
@@ -52,7 +52,7 @@ public:
    RECT r{0,0,px(640),px(480)};DWORD style=WS_OVERLAPPEDWINDOW;AdjustWindowRectExForDpi(&r,style,FALSE,WS_EX_TOOLWINDOW,dpi);
    POINT cursor{};GetCursorPos(&cursor);MONITORINFO mi{sizeof(mi)};GetMonitorInfoW(MonitorFromPoint(cursor,MONITOR_DEFAULTTONEAREST),&mi);
    CreateWindowExW(WS_EX_TOOLWINDOW,L"DesktopPetUpdate",tw(TextId::S246),style,(mi.rcWork.left+mi.rcWork.right-r.right+r.left)/2,(mi.rcWork.top+mi.rcWork.bottom-r.bottom+r.top)/2,r.right-r.left,r.bottom-r.top,owner,nullptr,instance,this);
-   if(!window)throw std::runtime_error(tr(TextId::S247));theme.sync(window);
+   if(!window)throw std::runtime_error(tr(TextId::S247));brandWindow(window);theme.sync(window);
    auto add=[&](const wchar_t*type,const wchar_t*text,DWORD flags,int id=0){return CreateWindowExW(0,type,text,WS_CHILD|WS_VISIBLE|flags,0,0,1,1,window,reinterpret_cast<HMENU>(INT_PTR(id)),instance,nullptr);};
    summary=add(L"STATIC",L"",0);notes=add(L"EDIT",L"",WS_BORDER|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL|WS_TABSTOP);
    SetWindowTheme(notes,L"",L"");progress=add(PROGRESS_CLASSW,L"",0);status=add(L"STATIC",L"",0);nowButton=add(L"BUTTON",tw(TextId::S248),WS_TABSTOP|BS_OWNERDRAW,1);laterButton=add(L"BUTTON",tw(TextId::S249),WS_TABSTOP|BS_OWNERDRAW,2);SendMessageW(notes,EM_SETLIMITTEXT,65536,0);layout();
