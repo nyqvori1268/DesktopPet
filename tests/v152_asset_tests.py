@@ -39,6 +39,6 @@ assert 'brandIcon(px(48))' in (root/'src/about_window.h').read_text()
 assert 'brandWindow(' in (root/'updater/main.cpp').read_text()
 assert 'save(root/"assets/icons/pet.ico"' not in (root/'tools/export_assets.cpp').read_text()
 cmake=(root/'CMakeLists.txt').read_text()
-assert 'project(DesktopPet VERSION 1.5.2' in cmake and 'v152_modes_editors' in cmake and 'v152_native_ui' in cmake
+assert 'project(DesktopPet VERSION 1.5.3' in cmake and 'v152_modes_editors' in cmake and 'v152_native_ui' in cmake
 assert '1 ICON "pet.ico"' in (root/'src/pet.rc.in').read_text()
 print('PASS: original nine-size RGBA brand ICO hash/PNG CRC; runtime overlay removal; native icon routes; foreground-event gate; v1.5.2 test registration (Windows GUI not executed)')

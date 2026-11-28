@@ -1,4 +1,4 @@
-# DesktopPet 1.5.2
+# DesktopPet 1.5.3
 
 Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲，沒有帳號、遙測、廣告或常駐服務。除了可選的 GitHub 更新，不使用網路。開發者 Meow，© 2026 Meow。軟體與原創素材採 [MIT](LICENSE)；匯入第三方素材另依其授權，見 [元件與素材聲明](THIRD_PARTY_NOTICES.md)。
 
@@ -14,9 +14,9 @@ Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲�
 
 ## 下載與執行
 
-從 [GitHub Releases](https://github.com/nyqvori1268/DesktopPet/releases) 優先下載 `DesktopPet_v{version}.zip`（例如 `DesktopPet_v1.5.2.zip`），完整解壓到可寫入的資料夾，執行同名根資料夾 `DesktopPet_v{version}/` 內的 `DesktopPet.exe`。`DesktopPet-windows-x64.zip` 是自動更新專用包，保留原本平坦的五檔結構；一般手動下載請選版本命名包。`SHA256SUMS.txt` 列出兩種 ZIP 的 SHA-256。不要只取出 EXE；保留 `Updater.exe` 與 `data/dialogue.json`。無需安裝或管理員權限，MSVC Runtime 靜態連結。
+從 [GitHub Releases](https://github.com/nyqvori1268/DesktopPet/releases) 優先下載 `DesktopPet_v{version}.zip`（例如 `DesktopPet_v1.5.3.zip`），完整解壓到可寫入的資料夾，執行同名根資料夾 `DesktopPet_v{version}/` 內的 `DesktopPet.exe`。`DesktopPet-windows-x64.zip` 是自動更新專用包，保留原本平坦的五檔結構；一般手動下載請選版本命名包。`SHA256SUMS.txt` 列出兩種 ZIP 的 SHA-256。不要只取出 EXE；保留 `Updater.exe` 與 `data/dialogue.json`。無需安裝或管理員權限，MSVC Runtime 靜態連結。
 
-**v1.5.2 開發交付。** 此修改包不含 Windows EXE，未建立 Tag 或發布 Release；本次已執行與待驗證項目見 [v1.5.2 驗證紀錄](docs/V152_TESTING.md)，正式編譯、簽署及雙 ZIP 打包沿用 [發布流程](docs/RELEASE.md)。
+**v1.5.3 開發交付。** 此修改包不含 Windows EXE，未建立 Tag 或發布 Release；本次已執行與待驗證項目見 [v1.5.3 驗證紀錄](docs/V153_TESTING.md)，正式編譯、簽署及雙 ZIP 打包沿用 [發布流程](docs/RELEASE.md)。
 
 ## 語言、對話與關於
 
@@ -27,6 +27,12 @@ Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲�
 三組自訂寵物各有「編輯台詞」：直接開啟三語分頁及全部八類輸入框（一般、開心、撫摸、生氣、拖曳、睡覺、睡醒、時間提醒），可上下捲動、逐行新增、修改、清空，預覽最後選取的分類。各語言獨立保存草稿，確定才一次儲存，取消不改台詞。未設定的語言／狀態使用同語言通用台詞，不借用其他語言。舊版台詞無損保留在繁中，英文及日文預設空白；使用者原文不翻譯。各語言各狀態最多 24 句，每句 360 UTF-8 位元組，總設定受既有 1 MiB 安全界限保護（預留其他設定空間）。可獨立關閉一般對話，提醒不受影響。設定、名稱及素材在重啟、切換及更新後保留；清除整組才刪除該組全部語言。詳見 [自訂寵物文件](docs/CUSTOM_PETS.md)。
 
 「關於」為原生可調整視窗，顯示版本／架構、Meow、Copyright、MIT 全文、實際元件與素材聲明，以及專案／問題／版本紀錄連結與檢查更新。版號由 CMake 生成，不需修改資源檔。
+
+## v1.5.3 右鍵選單及名稱保存
+
+右鍵主選單及子選單追蹤期間，暫停寵物置頂補正並暫時調整視窗層級，GIF 繼續播放；不以隱藏寵物解決遮擋。選單關閉後恢復目前的置頂偏好，計時及提醒佇列持續運作。原有多螢幕／全螢幕避讓、名牌、穿透及 DPI 功能保留，詳見 [驗證紀錄](docs/V153_TESTING.md)。
+
+自訂名稱依 22 款外觀與三個自訂槽獨立保存，切換角色／花色／語言及更新重啟不會重設。設定仍優先寫可寫的程式資料夾，並以相同內容原子保存 `%LOCALAPPDATA%\DesktopPet\config.json` 復原副本；新版本目錄缺少設定時先讀既有副本，兩份都存在時先讀較新檔，失敗才讀另一份。舊版若只在舊資料夾保存設定，首次搬到新資料夾時仍須帶上原 config.json；已被覆寫且沒有舊設定副本的名稱無法憑空還原。軟體不掃描其他版本資料夾。
 
 ## v1.5.2 操作改善
 
