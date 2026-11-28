@@ -1,4 +1,4 @@
-# DesktopPet 1.5.3
+# DesktopPet 1.5.4
 
 Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲，沒有帳號、遙測、廣告或常駐服務。除了可選的 GitHub 更新，不使用網路。開發者 Meow，© 2026 Meow。軟體與原創素材採 [MIT](LICENSE)；匯入第三方素材另依其授權，見 [元件與素材聲明](THIRD_PARTY_NOTICES.md)。
 
@@ -14,9 +14,9 @@ Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲�
 
 ## 下載與執行
 
-從 [GitHub Releases](https://github.com/nyqvori1268/DesktopPet/releases) 優先下載 `DesktopPet_v{version}.zip`（例如 `DesktopPet_v1.5.3.zip`），完整解壓到可寫入的資料夾，執行同名根資料夾 `DesktopPet_v{version}/` 內的 `DesktopPet.exe`。`DesktopPet-windows-x64.zip` 是自動更新專用包，保留原本平坦的五檔結構；一般手動下載請選版本命名包。`SHA256SUMS.txt` 列出兩種 ZIP 的 SHA-256。不要只取出 EXE；保留 `Updater.exe` 與 `data/dialogue.json`。無需安裝或管理員權限，MSVC Runtime 靜態連結。
+從 [GitHub Releases](https://github.com/nyqvori1268/DesktopPet/releases) 優先下載 `DesktopPet_v{version}.zip`（例如 `DesktopPet_v1.5.4.zip`），完整解壓到可寫入的資料夾，執行同名根資料夾 `DesktopPet_v{version}/` 內的 `DesktopPet.exe`。`DesktopPet-windows-x64.zip` 是自動更新專用包，保留原本平坦的五檔結構；一般手動下載請選版本命名包。`SHA256SUMS.txt` 列出兩種 ZIP 的 SHA-256。不要只取出 EXE；保留 `Updater.exe` 與 `data/dialogue.json`。無需安裝或管理員權限，MSVC Runtime 靜態連結。
 
-**v1.5.3 開發交付。** 此修改包不含 Windows EXE，未建立 Tag 或發布 Release；本次已執行與待驗證項目見 [v1.5.3 驗證紀錄](docs/V153_TESTING.md)，正式編譯、簽署及雙 ZIP 打包沿用 [發布流程](docs/RELEASE.md)。
+**v1.5.4 開發交付。** 此修改包不含 Windows EXE，未建立 Tag 或發布 Release；本次已執行與待驗證項目見 [v1.5.4 驗證紀錄](docs/V154_TESTING.md)，正式編譯、簽署及雙 ZIP 打包沿用 [發布流程](docs/RELEASE.md)。
 
 ## 語言、對話與關於
 
@@ -27,6 +27,10 @@ Windows 11 x64 原生 Win32 桌面寵物。C++17、像素繪製、完全無聲�
 三組自訂寵物各有「編輯台詞」：直接開啟三語分頁及全部八類輸入框（一般、開心、撫摸、生氣、拖曳、睡覺、睡醒、時間提醒），可上下捲動、逐行新增、修改、清空，預覽最後選取的分類。各語言獨立保存草稿，確定才一次儲存，取消不改台詞。未設定的語言／狀態使用同語言通用台詞，不借用其他語言。舊版台詞無損保留在繁中，英文及日文預設空白；使用者原文不翻譯。各語言各狀態最多 24 句，每句 360 UTF-8 位元組，總設定受既有 1 MiB 安全界限保護（預留其他設定空間）。可獨立關閉一般對話，提醒不受影響。設定、名稱及素材在重啟、切換及更新後保留；清除整組才刪除該組全部語言。詳見 [自訂寵物文件](docs/CUSTOM_PETS.md)。
 
 「關於」為原生可調整視窗，顯示版本／架構、Meow、Copyright、MIT 全文、實際元件與素材聲明，以及專案／問題／版本紀錄連結與檢查更新。版號由 CMake 生成，不需修改資源檔。
+
+## v1.5.4 名牌
+
+名牌字體在 100%／96 DPI 從 12 放大至 14 px；最小 10 邏輯 px，隨寵物比例與 DPI 縮放。寬高依實際文字量測與內距自適應，完整顯示最長合法名稱，保留貼近可見輪廓的穩定位置。名牌停用自身 DWM 非用戶區裝飾與類別投影，半透明背景及圓角由原 GDI+ 繪製；不更動 Windows 全域視覺效果。此開發增量包的實際 Windows 陰影／DPI／多螢幕效果仍待驗證，見 [紀錄](docs/V154_TESTING.md)。
 
 ## v1.5.3 右鍵選單及名稱保存
 

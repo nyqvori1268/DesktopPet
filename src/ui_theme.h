@@ -10,10 +10,10 @@ inline void setTextIfChanged(HWND control,const std::wstring&text){if(controlTex
 struct UITheme{
  bool dark=false,contrast=false;COLORREF background=0,card=0,foreground=0,muted=0,accent=0,border=0;HBRUSH backBrush=nullptr,cardBrush=nullptr;
  ~UITheme(){if(backBrush)DeleteObject(backBrush);if(cardBrush)DeleteObject(cardBrush);}
- void sync(HWND window){
+ void sync(HWND window,bool nativeFrame=true){
   HIGHCONTRASTW hc{sizeof(hc)};contrast=SystemParametersInfoW(SPI_GETHIGHCONTRAST,sizeof(hc),&hc,0)&&(hc.dwFlags&HCF_HIGHCONTRASTON);DWORD light=1,bytes=sizeof(light);RegGetValueW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",L"AppsUseLightTheme",RRF_RT_REG_DWORD,nullptr,&light,&bytes);dark=!contrast&&!light;
   background=contrast?GetSysColor(COLOR_WINDOW):dark?RGB(25,28,35):RGB(243,245,249);card=contrast?GetSysColor(COLOR_WINDOW):dark?RGB(37,42,52):RGB(255,255,255);foreground=contrast?GetSysColor(COLOR_WINDOWTEXT):dark?RGB(237,240,247):RGB(32,42,58);muted=contrast?foreground:dark?RGB(178,188,208):RGB(87,102,123);accent=contrast?GetSysColor(COLOR_HIGHLIGHT):dark?RGB(113,168,240):RGB(39,105,190);border=contrast?foreground:dark?RGB(75,84,101):RGB(209,217,229);
-  if(backBrush)DeleteObject(backBrush);if(cardBrush)DeleteObject(cardBrush);backBrush=CreateSolidBrush(background);cardBrush=CreateSolidBrush(card);BOOL enabled=dark;DwmSetWindowAttribute(window,DWMWINDOWATTRIBUTE(20),&enabled,sizeof(enabled));int corner=contrast?1:2;DwmSetWindowAttribute(window,DWMWINDOWATTRIBUTE(33),&corner,sizeof(corner));RedrawWindow(window,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);
+  if(backBrush)DeleteObject(backBrush);if(cardBrush)DeleteObject(cardBrush);backBrush=CreateSolidBrush(background);cardBrush=CreateSolidBrush(card);if(nativeFrame){BOOL enabled=dark;DwmSetWindowAttribute(window,DWMWINDOWATTRIBUTE(20),&enabled,sizeof(enabled));int corner=contrast?1:2;DwmSetWindowAttribute(window,DWMWINDOWATTRIBUTE(33),&corner,sizeof(corner));}RedrawWindow(window,nullptr,nullptr,RDW_INVALIDATE|RDW_ERASE|RDW_ALLCHILDREN);
  }
  HBRUSH color(HDC dc,bool input=false){SetTextColor(dc,foreground);SetBkColor(dc,input?card:background);return input?cardBrush:backBrush;}
  void panel(HDC dc,RECT r,int radius){auto pen=CreatePen(PS_SOLID,1,border);auto oldPen=SelectObject(dc,pen);auto oldBrush=SelectObject(dc,cardBrush);RoundRect(dc,r.left,r.top,r.right,r.bottom,radius,radius);SelectObject(dc,oldBrush);SelectObject(dc,oldPen);DeleteObject(pen);}
